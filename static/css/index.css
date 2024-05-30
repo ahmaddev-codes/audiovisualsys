@@ -1,0 +1,189 @@
+:root {
+  --button: #38913b;
+  --button-hover: #25af2a;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Montserrat', sans-serif;
+}
+
+main.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+section.forms {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 100px;
+}
+
+/* Hide the default file input */
+/* input[type="file"] {
+  display: none;
+} */
+
+/* Style the label to look like a button */
+input[type="file"] ~ label {
+  padding: 10px;
+  background-color: white;
+  color: black;
+  cursor: pointer;
+  border: 1px solid black;
+  border-radius: 5px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  text-align: center;
+  display: inline-block;
+}
+
+/* Change the background color when hovering over the label */
+/* input[type="file"]:hover ~ label {
+  background-color: #25af2a;
+} */
+
+input[type="file"] ~ label img {
+  width: 100px;
+  height: 100px;
+  display: block;
+  padding-right: 20px;
+}
+
+section.forms .audio_conversion,
+section.forms .image_conversion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 20px;
+  width: 100%;
+  padding: 50px;
+  border: 4px solid var(--button);
+  border-radius: 10px;
+}
+
+.audio_conversion form,
+.image_conversion form {
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+
+form button {
+  margin-top: 10px;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: var(--button);
+  color: white;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+}
+
+form button:hover {
+  background-color: var(--button-hover);
+  transition: color 300ms ease;
+}
+
+#image-display #image-preview {
+  width: 200px;
+  height: 200px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 5px;
+}
+
+#image-display #image-output {
+  width: auto;
+  height: auto;
+  background-size: cover;
+  background-position: center;
+  border-radius: 5px;
+}
+
+/* image and audio styles */
+#image-display,
+#audio-display {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: auto;
+}
+
+#audio-display #audio-preview {
+  width: 200px;
+  height: 200px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 5px;
+}
+
+#audio-display #audio-output {
+  width: auto;
+  height: auto;
+  background-size: cover;
+  background-position: center;
+  border-radius: 5px
+}
+
+.no-background {
+  background-image: none !important;
+  width: 100% !important;
+  height: auto !important;
+}
+
+#image-conversion-loader,
+#audio-conversion-loader {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 9999;
+  width: 80px;
+  height: 80px;
+  margin: -40px 0 0 -40px;
+  border: 8px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 8px solid var(--button-hover);
+  -webkit-animation: spin 1s linear infinite;
+  animation: spin 1s linear infinite;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% {
+    -webkit-transform: rotate(0deg);
+  }
+
+  100% {
+    -webkit-transform: rotate(360deg);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}

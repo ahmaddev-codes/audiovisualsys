@@ -1,0 +1,120 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>AudioVisual_system</title>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{% static 'css/index.css' %}"
+    />
+    <link
+      rel="icon"
+      href="{% static 'images/favicon.ico' %}"
+      type="image/x-icon"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <main class="container">
+      <h1>AudioVisual Interconversion System</h1>
+    </main>
+
+    <section class="forms">
+      <!-- Audio conversion form -->
+      <div class="audio_conversion">
+        <form
+          action="{% url 'homepage:homepage' %}"
+          method="post"
+          enctype="multipart/form-data"
+          onchange="previewAudio(event)"
+          id="audio-form"
+        >
+          {% csrf_token %}
+          <label for="audio-file">
+            <img src="{% static 'images/arrow_upload.svg' %}" alt="Upload" />
+            Upload Audio
+          </label>
+          <div id="audio-display">
+            <div
+              id="audio-preview"
+              style="background-image: url('{% static 'images/upload.svg' %}')"
+            ></div>
+            <!-- Div to display prediction -->
+            <div id="audio-output">
+              <!-- Display image output result here -->
+              {% if image %}
+              <img src="data:image/jpeg;base64,{{ image }}" />
+              {% endif %}
+            </div>
+          </div>
+          <input
+            type="file"
+            id="audio-file"
+            name="audio_file"
+            accept="audio/*"
+            required
+            onchange="previewImage(event)"
+          />
+          <button type="submit">Convert Audio to Image</button>
+          <div id="audio-conversion-loader"></div>
+        </form>
+      </div>
+
+      <!-- Image conversion form -->
+      <div class="image_conversion">
+        <form
+          action="{% url 'homepage:homepage' %}"
+          method="post"
+          enctype="multipart/form-data"
+          id="image-form"
+          onchange="previewImage(event)"
+        >
+          {% csrf_token %}
+          <label for="image-file">
+            <img src="{% static 'images/arrow_upload.svg' %}" alt="Upload" />
+            Upload Image
+          </label>
+          <div id="image-display">
+            <div
+              id="image-preview"
+              style="background-image: url('{% static 'images/upload.svg' %}')"
+            ></div>
+            <!-- Div to display prediction -->
+            <div id="image-output">
+              <!-- Display audio output result here -->
+              {% if audio %}
+              <audio controls>
+                <source
+                  src="data:audio/wav;base64,{{ audio }}"
+                  type="audio/wav"
+                />
+                Your browser does not support the audio element.
+              </audio>
+              {% endif %}
+            </div>
+          </div>
+          <input
+            type="file"
+            name="image_file"
+            id="image_file"
+            accept="image/*"
+            required
+            onchange="previewImage(event)"
+          />
+          <button type="submit">Convert Image to Audio</button>
+          <div id="image-conversion-loader"></div>
+        </form>
+      </div>
+    </section>
+
+    <script src="{% static 'js/index.js' %}"></script>
+  </body>
+</html>
