@@ -21,18 +21,18 @@ jobs:
       - name: Install dependencies
         run: |
           python -m venv venv
-          . venv/bin/activate
+          source venv/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Run Django migrations
         run: |
-          . venv/bin/activate
+          source venv/bin/activate
           python manage.py migrate
 
       - name: Collect static files
         run: |
-          . venv/bin/activate
+          source venv/bin/activate
           python manage.py collectstatic --noinput
 
       - name: Deploy to Azure Web App

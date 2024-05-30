@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-5+gulo&-k+^k55t18^u7jot6$_dncz3d=$%whgpjzjizfji=g$'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 # CSRF_COOKIE_SECURE = True  # Use Secure flag for CSRF cookies
 # CSRF_COOKIE_HTTPONLY = True  # Prevent JavaScript access to CSRF cookies
@@ -130,13 +130,16 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 # Define the STATIC_ROOT setting
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
+# Additional locations of static files
 STATICFILES_DIRS = [
+    # Add paths to directories containing static files for your apps
     os.path.join(BASE_DIR, 'static'),
 ]
+
+# The directory where collectstatic will collect static files for deployment.
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
