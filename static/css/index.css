@@ -1,6 +1,10 @@
 :root {
+  /* Colors */
   --button: #38913b;
   --button-hover: #25af2a;
+
+  /* Typography */
+  --montserrat: "Montserrat", sans-serif;
 }
 
 *,
@@ -12,7 +16,8 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--montserrat);
+  font-size: 16px;
 }
 
 main.container {
@@ -43,7 +48,7 @@ input[type="file"] ~ label {
   cursor: pointer;
   border: 1px solid black;
   border-radius: 5px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--montserrat);
   font-size: 16px;
   text-align: center;
   display: inline-block;
@@ -92,7 +97,7 @@ form button {
   background-color: var(--button);
   color: white;
   font-size: 16px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--montserrat);
   cursor: pointer;
 }
 
