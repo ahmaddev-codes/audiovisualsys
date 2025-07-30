@@ -48,9 +48,32 @@ jobs:
         run: |
           python manage.py collectstatic --noinput
 
-      - name: Create startup command file
+      - name: Create web.config for Windows App Service
         run: |
-          echo "gunicorn --bind=0.0.0.0 --timeout 600 audiovisualsys.wsgi" > startup.txt
+          cat > web.config << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <system.webServer>
+              <handlers>
+                <add name="httpPlatformHandler" path="*" verb="*" modules="httpPlatformHandler" resourceType="Unspecified" />
+              </handlers>
+              <httpPlatform processPath="%home%\site\wwwroot\env\Scripts\python.exe"
+                            arguments="%home%\site\wwwroot\manage.py runserver %HTTP_PLATFORM_PORT%"
+                            stdoutLogEnabled="true"
+                            stdoutLogFile="%home%\LogFiles\stdout"
+                            startupTimeLimit="60">
+                <environmentVariables>
+                  <environmentVariable name="PORT" value="%HTTP_PLATFORM_PORT%" />
+                  <environmentVariable name="DJANGO_SETTINGS_MODULE" value="audiovisualsys.settings" />
+                </environmentVariables>
+              </httpPlatform>
+            </system.webServer>
+          </configuration>
+          EOF
+
+      - name: Create startup.txt for Azure
+        run: |
+          echo "python manage.py runserver 0.0.0.0:%PORT%" > startup.txt
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
@@ -58,7 +81,6 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           slot-name: 'production'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          startup-command: 'gunicorn --bind=0.0.0.0 --timeout 600 audiovisualsys.wsgi'
 
       - name: Deploy to Azure Web App - Alternative
         if: failure()

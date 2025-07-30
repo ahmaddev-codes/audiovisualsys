@@ -1,0 +1,26 @@
+# Azure App Service Configuration
+# This file contains configuration for Azure App Service deployment
+
+# Application Settings
+app_settings:
+  - name: "WEBSITE_NODE_DEFAULT_VERSION"
+    value: "~18"
+  - name: "PYTHON_VERSION"
+    value: "3.11"
+  - name: "SCM_DO_BUILD_DURING_DEPLOYMENT"
+    value: "true"
+  - name: "DJANGO_SETTINGS_MODULE"
+    value: "audiovisualsys.settings"
+  - name: "PYTHONPATH"
+    value: "/home/site/wwwroot"
+
+# Startup Command
+startup_command: "python manage.py runserver 0.0.0.0:%PORT%"
+
+# Build Configuration
+build_config:
+  python_version: "3.11"
+  build_commands:
+    - "pip install -r requirements.txt"
+    - "python manage.py migrate --noinput"
+    - "python manage.py collectstatic --noinput" 
