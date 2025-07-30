@@ -2,7 +2,7 @@
 
 A cutting-edge web application that uses artificial intelligence to convert between audio and images. Powered by OpenAI Whisper, GPT-4, DALL-E 3, and ElevenLabs for state-of-the-art AI processing.
 
-![project image](./ext.images/project_image.png)
+![project image](./ext.images/app_img.png)
 
 ## ✨ Features
 
