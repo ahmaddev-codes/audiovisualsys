@@ -1,67 +1,219 @@
-# Audiovisual Interconversion System
+# 🤖 AI AudioVisual Interconversion System
 
-The Audiovisual Interconversion System is a web application that utilizes machine learning models to convert between audio and image formats. It allows users to convert audio files into corresponding image representations, as well as convert image files into audio representations.
+A cutting-edge web application that uses artificial intelligence to convert between audio and images. Powered by OpenAI Whisper, GPT-4, DALL-E 3, and ElevenLabs for state-of-the-art AI processing.
 
 ![project image](./ext.images/project_image.png)
 
-## About the project
-The application is built using Django, a high-level Python web framework, and leverages the TensorFlow library for machine learning tasks. The audio-to-image conversion is achieved using a pre-trained model that converts audio spectrograms into images, while the image-to-audio conversion is achieved using a pre-trained model that converts images into audio spectrograms.
+## ✨ Features
 
-## How to use the app
-### 1. Launch your command prompt
-Open your command prompt/terminal by typing `cmd` in the search bar of your computer and pressing `Enter`.
+### 🎤 Audio to Image (AI-Powered)
+- **Real-time Audio Recording**: Record audio directly in your browser
+- **File Upload**: Upload existing audio files
+- **AI Transcription**: Uses OpenAI Whisper for accurate speech-to-text
+- **Smart Image Generation**: GPT-4 creates detailed image descriptions
+- **DALL-E 3 Integration**: Generates high-quality images from audio content
+- **Custom Prompts**: Add your own descriptions to guide image generation
 
-### 2. Clone the repository
-You can clone the repository by running the following command in your terminal:
+### 🖼️ Image to Audio (AI-Powered)
+- **Image Analysis**: GPT-4V analyzes image content and context
+- **Natural Voice Generation**: ElevenLabs creates human-like speech
+- **Multiple Voice Options**: Choose from various voice personalities
+- **Custom Description Styles**: Specify how you want the audio to sound
+- **Detailed Audio Descriptions**: Get comprehensive image descriptions in audio format
+
+### 🎯 Key AI Technologies
+- **OpenAI Whisper**: Speech recognition and transcription
+- **GPT-4**: Natural language processing and image description generation
+- **DALL-E 3**: High-quality image generation from text descriptions
+- **GPT-4V**: Advanced image analysis and understanding
+- **ElevenLabs**: Natural-sounding text-to-speech conversion
+
+## 🚀 Quick Start
+
+### 1. Prerequisites
+- Python 3.8 or higher
+- OpenAI API key
+- ElevenLabs API key
+
+### 2. Clone the Repository
 ```bash
-git clone <project directory>
+git clone <your-repository-url>
+cd audiovisualsys
 ```
 
-### 3. Navigate to the project directory
-You can navigate to the project directory by running the following command in your terminal:
+### 3. Set Up Environment Variables
+Create a `.env` file in the project root:
 ```bash
-cd <project directory>
+# AI API Keys
+OPENAI_API_KEY=your_openai_api_key_here
+ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
 ```
 
-### 4. Install the required packages
-You can install the required packages by running the following command in your terminal:
+### 4. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
-Wait for the packages to install.
 
-### 5. Run the app
-You can run the app by running the following command in your terminal:
+### 5. Run Database Migrations
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+### 6. Start the Development Server
 ```bash
 python manage.py runserver
 ```
-You should get a message like this:
-```bash
-Watching for file changes with StatReloader
-Performing system checks...
 
-System check identified no issues (0 silenced).
-May 11, 2024 - 10:10:52
-Django version 4.2.13, using settings 'audiovisual_sys.settings'
-Starting development server at http://127.0.0.1:8000/
-Quit the server with CONTROL-C.
+### 7. Access the Application
+Open your browser and navigate to:
 ```
-
-### 6. Open the app in your browser
-You can open the app in your browser by navigating to the following URL:
-```bash
 http://127.0.0.1:8000/
 ```
 
-### Extra: Debugging the project
-In the process of dedpendencies installation, some packages might require an extra installation to run. If you run into the error in the image below:
-![project image](./ext.images/error_image.png)
+## 🔧 API Key Setup
 
-You can go to the link below to download visual studio:
+### OpenAI API Key
+1. Visit [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Create an account or sign in
+3. Generate a new API key
+4. Add it to your `.env` file
 
-https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=Community&channel=Release&version=VS2022&source=VSLandingPage&cid=2030&passive=false
+### ElevenLabs API Key
+1. Visit [ElevenLabs](https://elevenlabs.io/)
+2. Create an account or sign in
+3. Go to your profile settings
+4. Copy your API key
+5. Add it to your `.env` file
 
-Follow the installation prompts and install.
+## 🎮 How to Use
 
-### Installing the required package
-On installation, launch the application and click on the Web Development
+### Audio to Image Conversion
+1. **Record Audio**: Click "🎤 Start Recording" and speak into your microphone
+2. **Upload Audio**: Or upload an existing audio file
+3. **Add Description** (Optional): Describe what you want to see generated
+4. **Generate**: Click "🎨 Generate Image with AI"
+5. **View Results**: See your AI-generated image with processing details
+
+### Image to Audio Conversion
+1. **Upload Image**: Select an image file to analyze
+2. **Choose Voice**: Select from available voice options
+3. **Add Style** (Optional): Describe how you want the audio to sound
+4. **Generate**: Click "🎵 Generate Audio with AI"
+5. **Listen**: Play the AI-generated audio description
+
+## 🏗️ Architecture
+
+```
+AI AudioVisual System
+├── Frontend (Django Templates + JavaScript)
+│   ├── Real-time Audio Recording
+│   ├── File Upload Interface
+│   └── AI Results Display
+├── Backend (Django + AI APIs)
+│   ├── Audio Processing (Whisper)
+│   ├── Image Generation (DALL-E 3)
+│   ├── Image Analysis (GPT-4V)
+│   └── Speech Synthesis (ElevenLabs)
+└── Database (SQLite)
+    ├── Conversion Sessions
+    └── Audio Recordings
+```
+
+## 🔍 Technical Details
+
+### AI Processing Pipeline
+
+#### Audio → Image
+1. **Audio Input**: Record or upload audio file
+2. **Speech Recognition**: OpenAI Whisper transcribes audio to text
+3. **Description Generation**: GPT-4 creates detailed image description
+4. **Image Generation**: DALL-E 3 generates high-quality image
+5. **Output**: Display generated image with metadata
+
+#### Image → Audio
+1. **Image Input**: Upload image file
+2. **Image Analysis**: GPT-4V analyzes image content
+3. **Description Generation**: Creates detailed audio description
+4. **Speech Synthesis**: ElevenLabs converts text to speech
+5. **Output**: Play generated audio with metadata
+
+### Database Models
+- **ConversionSession**: Tracks all AI conversion sessions
+- **AudioRecording**: Stores recorded audio data
+- **ImageUpload/AudioUpload**: Legacy models for file uploads
+
+## 🛠️ Development
+
+### Project Structure
+```
+audiovisualsys/
+├── app/
+│   ├── convert.py          # AI conversion logic
+│   ├── models.py           # Database models
+│   ├── views.py            # Django views
+│   └── templates/          # HTML templates
+├── static/
+│   ├── css/               # Stylesheets
+│   └── js/                # JavaScript
+├── audiovisualsys/
+│   ├── settings.py        # Django settings
+│   └── urls.py           # URL configuration
+└── requirements.txt       # Python dependencies
+```
+
+### Adding New Features
+1. **New AI Models**: Add to `convert.py` AIConverter class
+2. **UI Enhancements**: Modify templates and JavaScript
+3. **Database Changes**: Update models and run migrations
+4. **API Integration**: Add new API keys to settings
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+#### Microphone Access
+- Ensure browser has microphone permissions
+- Check if microphone is working in other applications
+- Try refreshing the page and granting permissions again
+
+#### API Key Errors
+- Verify API keys are correctly set in `.env` file
+- Check API key validity and remaining credits
+- Ensure environment variables are loaded
+
+#### File Upload Issues
+- Check file size (max 10MB)
+- Verify file format is supported
+- Clear browser cache and try again
+
+#### AI Processing Errors
+- Check internet connection
+- Verify API service status
+- Review error logs in browser console
+
+### Debug Mode
+Enable debug logging by setting `DEBUG = True` in `settings.py`
+
+## 📝 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📞 Support
+
+For issues and questions:
+- Check the troubleshooting section
+- Review error logs
+- Create an issue in the repository
+
+---
+
+**Note**: This application requires active internet connection and valid API keys for AI processing. Make sure you have sufficient API credits for your intended usage.
