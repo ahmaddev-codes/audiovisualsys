@@ -340,6 +340,9 @@ document.addEventListener("DOMContentLoaded", function () {
           } else if (data.type === "error") {
             console.error("Server error:", data.error);
             alert(`Error: ${data.error}`);
+          } else if (data.type === "quota_error") {
+            console.error("Quota error:", data.error);
+            alert(`OpenAI API Quota Error: ${data.error}\n\nPlease check your OpenAI billing and try again later.`);
           } else {
             console.error("Unknown response type:", data.type);
             console.error("Full response data:", data);
@@ -417,6 +420,9 @@ document.addEventListener("DOMContentLoaded", function () {
           } else if (data.type === "error") {
             console.error("Server error:", data.error);
             alert(`Error: ${data.error}`);
+          } else if (data.type === "quota_error") {
+            console.error("Quota error:", data.error);
+            alert(`OpenAI API Quota Error: ${data.error}\n\nPlease check your OpenAI billing and try again later.`);
           } else {
             console.error("Unknown response type:", data.type);
             console.error("Full response data:", data);

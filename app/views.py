@@ -101,11 +101,43 @@ def ai_audio_to_image(request):
             session.error_message = result['error']
             session.save()
 
-            return JsonResponse({'error': result['error']}, status=500)
+            # Check if it's a quota error
+            error_message = result['error']
+            if 'insufficient_quota' in error_message or 'quota' in error_message.lower():
+                error_response = {
+                    'type': 'quota_error',
+                    'error': 'OpenAI API quota exceeded. Please check your billing and try again later.',
+                    'details': error_message
+                }
+            else:
+                error_response = {
+                    'type': 'error',
+                    'error': error_message
+                }
+
+            print(f"AI conversion failed: {error_message}")
+            return JsonResponse(error_response, status=500)
 
     except Exception as e:
         print(f"Error in ai_audio_to_image: {e}")
-        return JsonResponse({'error': str(e)}, status=500)
+        import traceback
+        traceback.print_exc()
+        
+        # Check if it's a quota error
+        error_message = str(e)
+        if 'insufficient_quota' in error_message or 'quota' in error_message.lower():
+            error_response = {
+                'type': 'quota_error',
+                'error': 'OpenAI API quota exceeded. Please check your billing and try again later.',
+                'details': error_message
+            }
+        else:
+            error_response = {
+                'type': 'error',
+                'error': error_message
+            }
+        
+        return JsonResponse(error_response, status=500)
 
 
 @csrf_exempt
@@ -191,21 +223,42 @@ def ai_image_to_audio(request):
             session.error_message = result['error']
             session.save()
 
-            error_response = {
-                'type': 'error',
-                'error': result['error']
-            }
-            print(f"AI conversion failed: {result['error']}")
+            # Check if it's a quota error
+            error_message = result['error']
+            if 'insufficient_quota' in error_message or 'quota' in error_message.lower():
+                error_response = {
+                    'type': 'quota_error',
+                    'error': 'OpenAI API quota exceeded. Please check your billing and try again later.',
+                    'details': error_message
+                }
+            else:
+                error_response = {
+                    'type': 'error',
+                    'error': error_message
+                }
+            
+            print(f"AI conversion failed: {error_message}")
             return JsonResponse(error_response, status=500)
 
     except Exception as e:
         print(f"Error in ai_image_to_audio: {e}")
         import traceback
         traceback.print_exc()
-        error_response = {
-            'type': 'error',
-            'error': str(e)
-        }
+        
+        # Check if it's a quota error
+        error_message = str(e)
+        if 'insufficient_quota' in error_message or 'quota' in error_message.lower():
+            error_response = {
+                'type': 'quota_error',
+                'error': 'OpenAI API quota exceeded. Please check your billing and try again later.',
+                'details': error_message
+            }
+        else:
+            error_response = {
+                'type': 'error',
+                'error': error_message
+            }
+        
         return JsonResponse(error_response, status=500)
 
 
