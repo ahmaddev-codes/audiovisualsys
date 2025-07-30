@@ -2,7 +2,7 @@
 
 The Audiovisual Interconversion System is a web application that utilizes machine learning models to convert between audio and image formats. It allows users to convert audio files into corresponding image representations, as well as convert image files into audio representations.
 
-![project image](./ext.images/project_image.png)
+![project image](./ext.images/app_img.png)
 
 ## About the project
 The application is built using Django, a high-level Python web framework, and leverages the TensorFlow library for machine learning tasks. The audio-to-image conversion is achieved using a pre-trained model that converts audio spectrograms into images, while the image-to-audio conversion is achieved using a pre-trained model that converts images into audio spectrograms.
