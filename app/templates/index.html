@@ -4,116 +4,299 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>AudioVisual_system</title>
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="{% static 'css/index.css' %}"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI AudioVisual System</title>
     <link
       rel="icon"
       href="{% static 'images/favicon.ico' %}"
       type="image/x-icon"
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
-      rel="stylesheet"
-    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              github: {
+                bg: '#0d1117',
+                border: '#30363d',
+                text: '#c9d1d9',
+                muted: '#8b949e',
+                accent: '#238636',
+                accentHover: '#2ea043',
+                danger: '#f85149',
+                warning: '#d29922'
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      .github-card {
+        background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+        border: 1px solid #30363d;
+        box-shadow: 0 8px 24px rgba(1, 4, 9, 0.3);
+      }
+      .github-button {
+        background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+        transition: all 0.2s ease;
+      }
+      .github-button:hover {
+        background: linear-gradient(135deg, #2ea043 0%, #3fb950 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(35, 134, 54, 0.4);
+      }
+      .upload-area {
+        border: 2px dashed #30363d;
+        transition: all 0.2s ease;
+      }
+      .upload-area:hover {
+        border-color: #238636;
+        background-color: rgba(35, 134, 54, 0.1);
+      }
+      .upload-area.dragover {
+        border-color: #238636;
+        background-color: rgba(35, 134, 54, 0.2);
+      }
+      .loader {
+        border: 2px solid #30363d;
+        border-top: 2px solid #238636;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
   </head>
-  <body>
-    <main class="container">
-      <h1>AudioVisual Interconversion System</h1>
+  <body class="bg-github-bg text-github-text min-h-screen">
+    <!-- Header -->
+    <header class="border-b border-github-border bg-github-bg/50 backdrop-blur-sm sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-github-accent rounded-lg flex items-center justify-center">
+              <span class="text-white font-bold text-lg">🤖</span>
+            </div>
+            <h1 class="text-xl font-semibold text-github-text">AI AudioVisual System</h1>
+          </div>
+          <div class="text-sm text-github-muted">
+            Powered by OpenAI & ElevenLabs
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Hero Section -->
+      <div class="text-center mb-12">
+        <h2 class="text-4xl font-bold text-github-text mb-4">
+          Convert Audio to Images & Images to Audio
+        </h2>
+        <p class="text-lg text-github-muted max-w-2xl mx-auto">
+          Transform your audio recordings into stunning AI-generated images, or convert images into natural-sounding audio descriptions using cutting-edge AI technology.
+        </p>
+      </div>
+
+      <!-- Conversion Cards -->
+      <div class="grid lg:grid-cols-2 gap-8">
+        <!-- Audio to Image Card -->
+        <div class="github-card rounded-xl p-6">
+          <div class="flex items-center space-x-3 mb-6">
+            <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+              <span class="text-2xl">🎤</span>
+            </div>
+            <div>
+              <h3 class="text-xl font-semibold text-github-text">Audio to Image</h3>
+              <p class="text-sm text-github-muted">Generate images from audio recordings</p>
+            </div>
+          </div>
+
+          <form id="audio-form" class="space-y-6" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <!-- Recording Section -->
+            <div class="space-y-4">
+              <div class="flex items-center space-x-2">
+                <span class="text-lg">🎙️</span>
+                <h4 class="font-medium text-github-text">Record Audio</h4>
+              </div>
+              <div class="flex items-center space-x-3">
+                <button type="button" id="recordButton" class="github-button px-4 py-2 rounded-lg text-white font-medium">
+                  🎤 Start Recording
+                </button>
+                <div id="recordingStatus" class="text-sm text-github-muted"></div>
+              </div>
+              <div id="recordingPreview" class="hidden"></div>
+            </div>
+
+            <!-- File Upload Section -->
+            <div class="space-y-4">
+              <div class="flex items-center space-x-2">
+                <span class="text-lg">📁</span>
+                <h4 class="font-medium text-github-text">Or Upload Audio File</h4>
+              </div>
+              <label for="audio-file" class="upload-area block p-6 rounded-lg cursor-pointer text-center">
+                <div class="space-y-3">
+                  <div class="w-12 h-12 bg-github-accent/20 rounded-lg flex items-center justify-center mx-auto">
+                    <span class="text-2xl">📤</span>
+                  </div>
+                  <div>
+                    <p class="text-github-text font-medium">Click to upload audio file</p>
+                    <p class="text-sm text-github-muted">or drag and drop</p>
+                  </div>
+                </div>
+                <input type="file" id="audio-file" name="audio_file" accept="audio/*" class="hidden" onchange="previewAudio(event)" />
+              </label>
+              <div id="audio-display" class="hidden">
+                <div id="audio-preview" class="bg-github-border/50 rounded-lg p-4"></div>
+              </div>
+            </div>
+
+            <!-- AI Description Prompt -->
+            <div class="space-y-3">
+              <div class="flex items-center space-x-2">
+                <span class="text-lg">✨</span>
+                <h4 class="font-medium text-github-text">AI Description Prompt (Optional)</h4>
+              </div>
+              <textarea
+                name="description_prompt"
+                id="description-prompt"
+                placeholder="Describe what you want to see generated from your audio (e.g., 'I want to see a peaceful mountain landscape', 'Create an abstract art piece', 'Show me a futuristic city')"
+                rows="3"
+                class="w-full px-3 py-2 bg-github-bg border border-github-border rounded-lg text-github-text placeholder-github-muted focus:outline-none focus:ring-2 focus:ring-github-accent focus:border-transparent resize-none"
+              ></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="github-button w-full py-3 rounded-lg text-white font-medium flex items-center justify-center space-x-2">
+              <span>🎨</span>
+              <span>Generate Image with AI</span>
+              <div id="audio-conversion-loader" class="loader hidden"></div>
+            </button>
+          </form>
+
+          <!-- Output Display -->
+          <div id="audio-output" class="mt-6 hidden">
+            <div class="border-t border-github-border pt-6">
+              <h4 class="font-medium text-github-text mb-4">🎨 Generated Image</h4>
+              <div id="generated-image" class="bg-github-border/50 rounded-lg p-4"></div>
+              <div id="ai-metadata" class="mt-4 text-sm text-github-muted"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Image to Audio Card -->
+        <div class="github-card rounded-xl p-6">
+          <div class="flex items-center space-x-3 mb-6">
+            <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+              <span class="text-2xl">🖼️</span>
+            </div>
+            <div>
+              <h3 class="text-xl font-semibold text-github-text">Image to Audio</h3>
+              <p class="text-sm text-github-muted">Generate audio from images</p>
+            </div>
+          </div>
+
+          <form id="image-form" class="space-y-6" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <!-- File Upload Section -->
+            <div class="space-y-4">
+              <div class="flex items-center space-x-2">
+                <span class="text-lg">📁</span>
+                <h4 class="font-medium text-github-text">Upload Image</h4>
+              </div>
+              <label for="image_file" class="upload-area block p-6 rounded-lg cursor-pointer text-center">
+                <div class="space-y-3">
+                  <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto">
+                    <span class="text-2xl">📤</span>
+                  </div>
+                  <div>
+                    <p class="text-github-text font-medium">Click to upload image</p>
+                    <p class="text-sm text-github-muted">or drag and drop</p>
+                  </div>
+                </div>
+                <input type="file" name="image_file" id="image_file" accept="image/*" required class="hidden" onchange="previewImage(event)" />
+              </label>
+              <div id="image-display" class="hidden">
+                <div id="image-preview" class="bg-github-border/50 rounded-lg p-4"></div>
+              </div>
+            </div>
+
+            <!-- Voice Preferences -->
+            <div class="space-y-4">
+              <div class="flex items-center space-x-2">
+                <span class="text-lg">🎵</span>
+                <h4 class="font-medium text-github-text">Voice Preferences</h4>
+              </div>
+              <select name="voice_preference" id="voice-preference" class="w-full px-3 py-2 bg-github-bg border border-github-border rounded-lg text-github-text focus:outline-none focus:ring-2 focus:ring-github-accent focus:border-transparent">
+                <option value="Rachel">Rachel (Female, Clear)</option>
+                <option value="Domi">Domi (Female, Warm)</option>
+                <option value="Bella">Bella (Female, Soft)</option>
+                <option value="Antoni">Antoni (Male, Deep)</option>
+                <option value="Thiago">Thiago (Male, Friendly)</option>
+                <option value="Josh">Josh (Male, Professional)</option>
+              </select>
+              
+              <textarea
+                name="description_style"
+                id="description-style"
+                placeholder="Describe how you want the audio to sound (e.g., 'Describe in a calm, detailed voice', 'Use an excited, enthusiastic tone', 'Make it sound like a nature documentary')"
+                rows="2"
+                class="w-full px-3 py-2 bg-github-bg border border-github-border rounded-lg text-github-text placeholder-github-muted focus:outline-none focus:ring-2 focus:ring-github-accent focus:border-transparent resize-none"
+              ></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="github-button w-full py-3 rounded-lg text-white font-medium flex items-center justify-center space-x-2">
+              <span>🎵</span>
+              <span>Generate Audio with AI</span>
+              <div id="image-conversion-loader" class="loader hidden"></div>
+            </button>
+          </form>
+
+          <!-- Output Display -->
+          <div id="image-output" class="mt-6 hidden">
+            <div class="border-t border-github-border pt-6">
+              <h4 class="font-medium text-github-text mb-4">🎵 Generated Audio</h4>
+              <div id="generated-audio" class="bg-github-border/50 rounded-lg p-4"></div>
+              <div id="image-metadata" class="mt-4 text-sm text-github-muted"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Features Section -->
+      <div class="mt-16 grid md:grid-cols-3 gap-6">
+        <div class="github-card rounded-xl p-6 text-center">
+          <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl">🎨</span>
+          </div>
+          <h3 class="font-semibold text-github-text mb-2">AI Image Generation</h3>
+          <p class="text-sm text-github-muted">Transform audio into stunning visuals using DALL-E 3</p>
+        </div>
+        <div class="github-card rounded-xl p-6 text-center">
+          <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl">🎵</span>
+          </div>
+          <h3 class="font-semibold text-github-text mb-2">Natural Voice Synthesis</h3>
+          <p class="text-sm text-github-muted">Convert images to natural-sounding audio with ElevenLabs</p>
+        </div>
+        <div class="github-card rounded-xl p-6 text-center">
+          <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl">🤖</span>
+          </div>
+          <h3 class="font-semibold text-github-text mb-2">Advanced AI Models</h3>
+          <p class="text-sm text-github-muted">Powered by Whisper, GPT-4, and GPT-4V</p>
+        </div>
+      </div>
     </main>
-
-    <section class="forms">
-      <!-- Audio conversion form -->
-      <div class="audio_conversion">
-        <form
-          action="{% url 'homepage:homepage' %}"
-          method="post"
-          enctype="multipart/form-data"
-          onchange="previewAudio(event)"
-          id="audio-form"
-        >
-          {% csrf_token %}
-          <label for="audio-file">
-            <img src="{% static 'images/arrow_upload.svg' %}" alt="Upload" />
-            Upload Audio
-          </label>
-          <div id="audio-display">
-            <div
-              id="audio-preview"
-              style="background-image: url('{% static 'images/upload.svg' %}')"
-            ></div>
-            <!-- Div to display prediction -->
-            <div id="audio-output">
-              <!-- Display image output result here -->
-              {% if image %}
-              <img src="data:image/jpeg;base64,{{ image }}" />
-              {% endif %}
-            </div>
-          </div>
-          <input
-            type="file"
-            id="audio-file"
-            name="audio_file"
-            accept="audio/*"
-            required
-            onchange="previewImage(event)"
-          />
-          <button type="submit">Convert Audio to Image</button>
-          <div id="audio-conversion-loader"></div>
-        </form>
-      </div>
-
-      <!-- Image conversion form -->
-      <div class="image_conversion">
-        <form
-          action="{% url 'homepage:homepage' %}"
-          method="post"
-          enctype="multipart/form-data"
-          id="image-form"
-          onchange="previewImage(event)"
-        >
-          {% csrf_token %}
-          <label for="image-file">
-            <img src="{% static 'images/arrow_upload.svg' %}" alt="Upload" />
-            Upload Image
-          </label>
-          <div id="image-display">
-            <div
-              id="image-preview"
-              style="background-image: url('{% static 'images/upload.svg' %}')"
-            ></div>
-            <!-- Div to display prediction -->
-            <div id="image-output">
-              <!-- Display audio output result here -->
-              {% if audio %}
-              <audio controls>
-                <source
-                  src="data:audio/wav;base64,{{ audio }}"
-                  type="audio/wav"
-                />
-                Your browser does not support the audio element.
-              </audio>
-              {% endif %}
-            </div>
-          </div>
-          <input
-            type="file"
-            name="image_file"
-            id="image_file"
-            accept="image/*"
-            required
-            onchange="previewImage(event)"
-          />
-          <button type="submit">Convert Image to Audio</button>
-          <div id="image-conversion-loader"></div>
-        </form>
-      </div>
-    </section>
 
     <script src="{% static 'js/index.js' %}"></script>
   </body>
