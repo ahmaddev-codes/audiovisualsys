@@ -44,7 +44,7 @@ class AIConverter:
 
             # Get image description from GPT-4
             response = self.openai_client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4o",
                 messages=[
                     {"role": "system", "content": "You are an expert at creating detailed, vivid image descriptions based on audio content. Focus on visual elements, mood, and atmosphere."},
                     {"role": "user", "content": prompt}
@@ -78,14 +78,14 @@ class AIConverter:
                 'output_path': output_path,
                 'transcription': audio_text,
                 'image_description': image_description,
-                'ai_model_used': 'whisper + gpt-4 + dall-e-3'
+                'ai_model_used': 'whisper + gpt-4o + dall-e-3'
             }
 
         except Exception as e:
             return {
                 'success': False,
                 'error': str(e),
-                'ai_model_used': 'whisper + gpt-4 + dall-e-3'
+                'ai_model_used': 'whisper + gpt-4o + dall-e-3'
             }
 
     def image_to_audio(self, image_file_path, voice_preference="", description_style=""):
@@ -93,7 +93,7 @@ class AIConverter:
         Convert image to audio using AI
         """
         try:
-            # Analyze image using GPT-4V
+            # Analyze image using GPT-4o
             print("Analyzing image...")
             with open(image_file_path, "rb") as img_file:
                 image_data = base64.b64encode(img_file.read()).decode('utf-8')
@@ -105,7 +105,7 @@ class AIConverter:
                 analysis_prompt = "Describe this image in detail. Focus on visual elements, composition, colors, mood, and any notable features that would be interesting to hear about."
 
             response = self.openai_client.chat.completions.create(
-                model="gpt-4-vision-preview",
+                model="gpt-4o",
                 messages=[
                     {"role": "system", "content": "You are an expert at analyzing images and creating detailed, engaging descriptions suitable for audio narration."},
                     {"role": "user", "content": [
@@ -139,14 +139,14 @@ class AIConverter:
                 'output_path': output_path,
                 'image_description': image_description,
                 'voice_used': voice,
-                'ai_model_used': 'gpt-4v + elevenlabs'
+                'ai_model_used': 'gpt-4o + elevenlabs'
             }
 
         except Exception as e:
             return {
                 'success': False,
                 'error': str(e),
-                'ai_model_used': 'gpt-4v + elevenlabs'
+                'ai_model_used': 'gpt-4o + elevenlabs'
             }
 
 # Legacy functions for backward compatibility

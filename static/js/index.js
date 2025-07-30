@@ -23,22 +23,51 @@ let audioChunks = [];
 let isRecording = false;
 
 async function toggleRecording() {
+  console.log("toggleRecording called");
   const recordButton = document.getElementById("recordButton");
   const recordingStatus = document.getElementById("recordingStatus");
   const recordingPreview = document.getElementById("recordingPreview");
 
+  console.log("Elements found:", {
+    recordButton: !!recordButton,
+    recordingStatus: !!recordingStatus,
+    recordingPreview: !!recordingPreview,
+  });
+
   if (!isRecording) {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
+      // Check if getUserMedia is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Audio recording is not supported in this browser");
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100,
+        },
+      });
+
+      mediaRecorder = new MediaRecorder(stream, {
+        mimeType: "audio/webm;codecs=opus",
+      });
       audioChunks = [];
 
       mediaRecorder.ondataavailable = (event) => {
-        audioChunks.push(event.data);
+        if (event.data.size > 0) {
+          audioChunks.push(event.data);
+        }
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+        if (audioChunks.length === 0) {
+          recordingStatus.textContent = "Error: No audio data recorded";
+          recordingStatus.className = "text-sm text-red-400";
+          return;
+        }
+
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
         const audioUrl = URL.createObjectURL(audioBlob);
 
         // Create audio element
@@ -59,22 +88,42 @@ async function toggleRecording() {
         recordingPreview.appendChild(audio);
         recordingPreview.appendChild(submitButton);
         recordingPreview.classList.remove("hidden");
+
+        recordingStatus.textContent = "Recording completed successfully!";
+        recordingStatus.className = "text-sm text-green-400";
       };
 
-      mediaRecorder.start();
+      mediaRecorder.onerror = (event) => {
+        console.error("MediaRecorder error:", event);
+        recordingStatus.textContent = "Error: Recording failed";
+        recordingStatus.className = "text-sm text-red-400";
+      };
+
+      mediaRecorder.start(1000); // Collect data every second
       isRecording = true;
       recordButton.textContent = "⏹️ Stop Recording";
       recordButton.className =
         "bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white font-medium";
-      recordingStatus.textContent = "Recording...";
+      recordingStatus.textContent = "Recording... Speak now!";
       recordingStatus.className = "text-sm text-red-400";
     } catch (error) {
       console.error("Error accessing microphone:", error);
-      recordingStatus.textContent = "Error: Could not access microphone";
+      recordingStatus.textContent = `Error: ${error.message}`;
       recordingStatus.className = "text-sm text-red-400";
+
+      // Show helpful message
+      if (error.name === "NotAllowedError") {
+        recordingStatus.textContent =
+          "Error: Microphone access denied. Please allow microphone access and try again.";
+      } else if (error.name === "NotFoundError") {
+        recordingStatus.textContent =
+          "Error: No microphone found. Please connect a microphone and try again.";
+      }
     }
   } else {
-    mediaRecorder.stop();
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      mediaRecorder.stop();
+    }
     isRecording = false;
     recordButton.textContent = "🎤 Start Recording";
     recordButton.className =
@@ -85,6 +134,7 @@ async function toggleRecording() {
 }
 
 async function submitRecordedAudio(audioUrl) {
+  console.log("submitRecordedAudio called");
   try {
     // Convert audio URL to blob
     const response = await fetch(audioUrl);
@@ -143,6 +193,7 @@ async function submitRecordedAudio(audioUrl) {
 
 // Display generated image
 function displayGeneratedImage(data) {
+  console.log("displayGeneratedImage called with:", data);
   const outputDiv = document.getElementById("audio-output");
   const generatedImage = document.getElementById("generated-image");
   const metadata = document.getElementById("ai-metadata");
@@ -184,6 +235,7 @@ function displayGeneratedImage(data) {
 
 // Display generated audio
 function displayGeneratedAudio(data) {
+  console.log("displayGeneratedAudio called with:", data);
   const outputDiv = document.getElementById("image-output");
   const generatedAudio = document.getElementById("generated-audio");
   const metadata = document.getElementById("image-metadata");
@@ -230,10 +282,34 @@ function displayGeneratedAudio(data) {
 
 // On document load
 document.addEventListener("DOMContentLoaded", function () {
+  console.log("DOM loaded, setting up event listeners");
+
+  // Test if all required elements exist
+  const requiredElements = [
+    "audio-form",
+    "image-form",
+    "recordButton",
+    "audio-file",
+    "image_file",
+    "audio-display",
+    "image-display",
+    "audio-preview",
+    "image-preview",
+  ];
+
+  console.log("Checking required elements:");
+  requiredElements.forEach((id) => {
+    const element = document.getElementById(id);
+    console.log(`${id}: ${!!element}`);
+  });
+
   // Add event listener to image form
   const imageForm = document.getElementById("image-form");
+  console.log("Image form found:", !!imageForm);
+
   if (imageForm) {
     imageForm.addEventListener("submit", function (event) {
+      console.log("Image form submitted");
       event.preventDefault();
 
       // Get form data
@@ -253,12 +329,21 @@ document.addEventListener("DOMContentLoaded", function () {
           "X-CSRFToken": getCSRFToken(),
         },
       })
-        .then((response) => response.json())
+        .then((response) => {
+          console.log("Response status:", response.status);
+          return response.json();
+        })
         .then((data) => {
+          console.log("Image form response:", data);
           if (data.type === "audio") {
             displayGeneratedAudio(data);
+          } else if (data.type === "error") {
+            console.error("Server error:", data.error);
+            alert(`Error: ${data.error}`);
           } else {
             console.error("Unknown response type:", data.type);
+            console.error("Full response data:", data);
+            alert("An unexpected error occurred. Please try again.");
           }
           // Hide image conversion loader
           if (imageLoader) {
@@ -266,7 +351,7 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         })
         .catch(function (error) {
-          console.error(error);
+          console.error("Image form error:", error);
           alert(
             "An error occurred during the AI image-to-audio conversion process. Please try again."
           );
@@ -280,14 +365,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Add event listener to audio form
   const audioForm = document.getElementById("audio-form");
+  console.log("Audio form found:", !!audioForm);
+
   if (audioForm) {
     audioForm.addEventListener("submit", function (event) {
+      console.log("Audio form submitted");
       event.preventDefault();
 
       // Check if we have either a file or recorded audio
       const audioFile = document.getElementById("audio-file").files[0];
       const hasRecording =
         document.querySelector("#recordingPreview audio") !== null;
+
+      console.log("Audio form check:", {
+        audioFile: !!audioFile,
+        hasRecording: hasRecording,
+      });
 
       if (!audioFile && !hasRecording) {
         alert(
@@ -313,12 +406,21 @@ document.addEventListener("DOMContentLoaded", function () {
           "X-CSRFToken": getCSRFToken(),
         },
       })
-        .then((response) => response.json())
+        .then((response) => {
+          console.log("Response status:", response.status);
+          return response.json();
+        })
         .then((data) => {
+          console.log("Audio form response:", data);
           if (data.type === "image") {
             displayGeneratedImage(data);
+          } else if (data.type === "error") {
+            console.error("Server error:", data.error);
+            alert(`Error: ${data.error}`);
           } else {
             console.error("Unknown response type:", data.type);
+            console.error("Full response data:", data);
+            alert("An unexpected error occurred. Please try again.");
           }
           // Hide audio conversion loader
           if (audioLoader) {
@@ -326,7 +428,7 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         })
         .catch(function (error) {
-          console.error(error);
+          console.error("Audio form error:", error);
           alert(
             "An error occurred during the AI audio-to-image conversion process. Please try again."
           );
@@ -344,20 +446,36 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // Preview Image function
 function previewImage(event) {
+  console.log("previewImage called");
   const input = event.target;
   if (input.files && input.files[0]) {
+    console.log("Image file selected:", input.files[0].name);
     const reader = new FileReader();
     reader.onload = function (e) {
-      const preview = input.parentElement.querySelector("#image-preview");
-      if (preview) {
+      // Find the image preview container
+      const imageDisplay = document.getElementById("image-display");
+      const imagePreview = document.getElementById("image-preview");
+
+      console.log("Image preview elements:", {
+        imageDisplay: !!imageDisplay,
+        imagePreview: !!imagePreview,
+      });
+
+      if (imagePreview) {
         const img = document.createElement("img");
         img.src = e.target.result;
         img.className = "w-full h-auto rounded-lg";
         img.alt = "Image Preview";
 
-        preview.innerHTML = "";
-        preview.appendChild(img);
-        preview.parentElement.classList.remove("hidden");
+        imagePreview.innerHTML = "";
+        imagePreview.appendChild(img);
+
+        // Show the display container
+        if (imageDisplay) {
+          imageDisplay.classList.remove("hidden");
+        }
+      } else {
+        console.error("Image preview element not found!");
       }
     };
     reader.readAsDataURL(input.files[0]);
@@ -366,11 +484,21 @@ function previewImage(event) {
 
 // Preview Audio function
 function previewAudio(event) {
+  console.log("previewAudio called");
   const input = event.target;
   if (input.files && input.files[0]) {
+    console.log("Audio file selected:", input.files[0].name);
     const reader = new FileReader();
     reader.onload = function (e) {
-      const audioPreview = input.parentElement.querySelector("#audio-preview");
+      // Find the audio preview container
+      const audioDisplay = document.getElementById("audio-display");
+      const audioPreview = document.getElementById("audio-preview");
+
+      console.log("Audio preview elements:", {
+        audioDisplay: !!audioDisplay,
+        audioPreview: !!audioPreview,
+      });
+
       if (audioPreview) {
         const audio = document.createElement("audio");
         audio.setAttribute("controls", "controls");
@@ -382,7 +510,13 @@ function previewAudio(event) {
 
         audioPreview.innerHTML = "";
         audioPreview.appendChild(audio);
-        audioPreview.parentElement.classList.remove("hidden");
+
+        // Show the display container
+        if (audioDisplay) {
+          audioDisplay.classList.remove("hidden");
+        }
+      } else {
+        console.error("Audio preview element not found!");
       }
     };
     reader.readAsDataURL(input.files[0]);
@@ -391,9 +525,12 @@ function previewAudio(event) {
 
 // Setup drag and drop functionality
 function setupDragAndDrop() {
+  console.log("Setting up drag and drop");
   const uploadAreas = document.querySelectorAll(".upload-area");
+  console.log("Upload areas found:", uploadAreas.length);
 
-  uploadAreas.forEach((area) => {
+  uploadAreas.forEach((area, index) => {
+    console.log(`Setting up upload area ${index + 1}`);
     area.addEventListener("dragover", (e) => {
       e.preventDefault();
       area.classList.add("dragover");

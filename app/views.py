@@ -123,6 +123,10 @@ def ai_image_to_audio(request):
         voice_preference = request.POST.get('voice_preference', 'Rachel')
         description_style = request.POST.get('description_style', '')
 
+        print(f"Processing image: {input_image.name}")
+        print(f"Voice preference: {voice_preference}")
+        print(f"Description style: {description_style}")
+
         # Create conversion session
         session = ConversionSession.objects.create(
             conversion_type='image_to_audio',
@@ -139,10 +143,15 @@ def ai_image_to_audio(request):
             for chunk in input_image.chunks():
                 destination.write(chunk)
 
+        print(f"Saved input image to: {input_path}")
+
         # Convert using AI
         converter = convert.AIConverter()
+        print("Starting AI conversion...")
         result = converter.image_to_audio(
             str(input_path), voice_preference, description_style)
+
+        print(f"AI conversion result: {result}")
 
         if result['success']:
             # Save output audio
@@ -150,6 +159,8 @@ def ai_image_to_audio(request):
             import shutil
             shutil.copy2(result['output_path'], output_path)
             os.unlink(result['output_path'])  # Clean up temp file
+
+            print(f"Saved output audio to: {output_path}")
 
             # Update session
             session.output_file = str(output_path)
@@ -180,11 +191,22 @@ def ai_image_to_audio(request):
             session.error_message = result['error']
             session.save()
 
-            return JsonResponse({'error': result['error']}, status=500)
+            error_response = {
+                'type': 'error',
+                'error': result['error']
+            }
+            print(f"AI conversion failed: {result['error']}")
+            return JsonResponse(error_response, status=500)
 
     except Exception as e:
         print(f"Error in ai_image_to_audio: {e}")
-        return JsonResponse({'error': str(e)}, status=500)
+        import traceback
+        traceback.print_exc()
+        error_response = {
+            'type': 'error',
+            'error': str(e)
+        }
+        return JsonResponse(error_response, status=500)
 
 
 @csrf_exempt
