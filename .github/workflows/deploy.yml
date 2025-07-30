@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: audiovisualsys
+  PYTHON_VERSION: '3.11'
 
 jobs:
   build-and-deploy:
@@ -11,33 +16,54 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.9.13'
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
-          python -m venv venv
-          source venv/bin/activate
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Create necessary directories
+        run: |
+          mkdir -p uploads image_files audio_files media
 
       - name: Run Django migrations
         run: |
-          source venv/bin/activate
-          python manage.py migrate
+          python manage.py migrate --noinput
 
       - name: Collect static files
         run: |
-          source venv/bin/activate
           python manage.py collectstatic --noinput
 
+      - name: Create startup command file
+        run: |
+          echo "gunicorn --bind=0.0.0.0 --timeout 600 audiovisualsys.wsgi" > startup.txt
+
       - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3
         with:
-          app-name: 'audiovisualsys'
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          slot-name: 'production'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          startup-command: 'gunicorn --bind=0.0.0.0 --timeout 600 audiovisualsys.wsgi'
+
+      - name: Deploy to Azure Web App - Alternative
+        if: failure()
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
           slot-name: 'production'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
