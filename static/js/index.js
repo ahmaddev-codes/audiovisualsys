@@ -1,5 +1,82 @@
 "use strict";
 
+// Toast notification system
+class ToastNotification {
+  constructor() {
+    this.createToastContainer();
+  }
+
+  createToastContainer() {
+    if (!document.getElementById('toast-container')) {
+      const container = document.createElement('div');
+      container.id = 'toast-container';
+      container.className = 'fixed top-4 right-4 z-50 space-y-2';
+      document.body.appendChild(container);
+    }
+  }
+
+  show(message, type = 'info', duration = 5000) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    
+    // Set background and text colors based on type
+    let bgColor, textColor, icon;
+    switch (type) {
+      case 'success':
+        bgColor = 'bg-green-600';
+        textColor = 'text-white';
+        icon = '<i data-lucide="check-circle" class="icon-sm"></i>';
+        break;
+      case 'error':
+        bgColor = 'bg-red-600';
+        textColor = 'text-white';
+        icon = '<i data-lucide="x-circle" class="icon-sm"></i>';
+        break;
+      case 'warning':
+        bgColor = 'bg-yellow-600';
+        textColor = 'text-white';
+        icon = '<i data-lucide="alert-triangle" class="icon-sm"></i>';
+        break;
+      default:
+        bgColor = 'bg-blue-600';
+        textColor = 'text-white';
+        icon = '<i data-lucide="info" class="icon-sm"></i>';
+    }
+
+    toast.className = `${bgColor} ${textColor} px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 transform transition-all duration-300 translate-x-full`;
+    toast.innerHTML = `
+      ${icon}
+      <span class="flex-1">${message}</span>
+      <button onclick="this.parentElement.remove()" class="text-white hover:text-gray-200">
+        <i data-lucide="x" class="icon-sm"></i>
+      </button>
+    `;
+
+    container.appendChild(toast);
+
+    // Animate in
+    setTimeout(() => {
+      toast.classList.remove('translate-x-full');
+    }, 100);
+
+    // Auto remove after duration
+    setTimeout(() => {
+      toast.classList.add('translate-x-full');
+      setTimeout(() => {
+        if (toast.parentElement) {
+          toast.remove();
+        }
+      }, 300);
+    }, duration);
+
+    // Reinitialize icons
+    lucide.createIcons();
+  }
+}
+
+// Initialize toast system
+const toast = new ToastNotification();
+
 // Get CSRF token from cookies
 function getCSRFToken() {
   const name = "csrftoken";
@@ -23,16 +100,9 @@ let audioChunks = [];
 let isRecording = false;
 
 async function toggleRecording() {
-  console.log("toggleRecording called");
   const recordButton = document.getElementById("recordButton");
   const recordingStatus = document.getElementById("recordingStatus");
   const recordingPreview = document.getElementById("recordingPreview");
-
-  console.log("Elements found:", {
-    recordButton: !!recordButton,
-    recordingStatus: !!recordingStatus,
-    recordingPreview: !!recordingPreview,
-  });
 
   if (!isRecording) {
     try {
@@ -64,6 +134,7 @@ async function toggleRecording() {
         if (audioChunks.length === 0) {
           recordingStatus.textContent = "Error: No audio data recorded";
           recordingStatus.className = "text-sm text-red-400";
+          toast.show("No audio data was recorded. Please try again.", "error");
           return;
         }
 
@@ -79,8 +150,8 @@ async function toggleRecording() {
         const submitButton = document.createElement("button");
         submitButton.type = "button";
         submitButton.className =
-          "github-button px-4 py-2 rounded-lg text-white font-medium mt-3";
-        submitButton.textContent = "Submit Recording";
+          "github-button px-4 py-2 rounded-lg text-white font-medium mt-3 flex items-center space-x-2";
+        submitButton.innerHTML = '<i data-lucide="send" class="icon-sm"></i><span>Submit Recording</span>';
         submitButton.onclick = () => submitRecordedAudio(audioUrl);
 
         // Clear previous content and add new content
@@ -89,25 +160,31 @@ async function toggleRecording() {
         recordingPreview.appendChild(submitButton);
         recordingPreview.classList.remove("hidden");
 
+        // Reinitialize icons for the new button
+        lucide.createIcons();
+
         recordingStatus.textContent = "Recording completed successfully!";
         recordingStatus.className = "text-sm text-green-400";
+        toast.show("Audio recording completed successfully!", "success");
       };
 
       mediaRecorder.onerror = (event) => {
-        console.error("MediaRecorder error:", event);
+        // Error handling for MediaRecorder
         recordingStatus.textContent = "Error: Recording failed";
         recordingStatus.className = "text-sm text-red-400";
+        toast.show("Recording failed. Please try again.", "error");
       };
 
       mediaRecorder.start(1000); // Collect data every second
       isRecording = true;
-      recordButton.textContent = "⏹️ Stop Recording";
+      recordButton.innerHTML = '<i data-lucide="square" class="icon-sm"></i><span>Stop Recording</span>';
       recordButton.className =
-        "bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white font-medium";
+        "bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white font-medium flex items-center space-x-2";
       recordingStatus.textContent = "Recording... Speak now!";
       recordingStatus.className = "text-sm text-red-400";
+      // Reinitialize icons for the new button content
+      lucide.createIcons();
     } catch (error) {
-      console.error("Error accessing microphone:", error);
       recordingStatus.textContent = `Error: ${error.message}`;
       recordingStatus.className = "text-sm text-red-400";
 
@@ -115,26 +192,31 @@ async function toggleRecording() {
       if (error.name === "NotAllowedError") {
         recordingStatus.textContent =
           "Error: Microphone access denied. Please allow microphone access and try again.";
+        toast.show("Microphone access denied. Please allow microphone access and try again.", "error");
       } else if (error.name === "NotFoundError") {
         recordingStatus.textContent =
           "Error: No microphone found. Please connect a microphone and try again.";
+        toast.show("No microphone found. Please connect a microphone and try again.", "error");
+      } else {
+        toast.show(`Recording error: ${error.message}`, "error");
       }
     }
-  } else {
-    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-      mediaRecorder.stop();
+      } else {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      }
+      isRecording = false;
+      recordButton.innerHTML = '<i data-lucide="mic" class="icon-sm"></i><span>Start Recording</span>';
+      recordButton.className =
+        "github-button px-4 py-2 rounded-lg text-white font-medium flex items-center space-x-2";
+      recordingStatus.textContent = "Recording stopped";
+      recordingStatus.className = "text-sm text-github-muted";
+      // Reinitialize icons for the new button content
+      lucide.createIcons();
     }
-    isRecording = false;
-    recordButton.textContent = "🎤 Start Recording";
-    recordButton.className =
-      "github-button px-4 py-2 rounded-lg text-white font-medium";
-    recordingStatus.textContent = "Recording stopped";
-    recordingStatus.className = "text-sm text-github-muted";
-  }
 }
 
 async function submitRecordedAudio(audioUrl) {
-  console.log("submitRecordedAudio called");
   try {
     // Convert audio URL to blob
     const response = await fetch(audioUrl);
@@ -174,8 +256,13 @@ async function submitRecordedAudio(audioUrl) {
 
       if (data.type === "image") {
         displayGeneratedImage(data);
+        toast.show("Image generated successfully!", "success");
+      } else if (data.type === "error") {
+        toast.show(`Error: ${data.error}`, "error");
+      } else if (data.type === "quota_error") {
+        toast.show(`OpenAI API Quota Error: ${data.error}. Please check your OpenAI billing and try again later.`, "error");
       } else {
-        console.error("Unknown response type:", data.type);
+        toast.show("An unexpected error occurred. Please try again.", "error");
       }
 
       // Hide loader
@@ -184,16 +271,12 @@ async function submitRecordedAudio(audioUrl) {
       }
     };
   } catch (error) {
-    console.error("Error submitting recorded audio:", error);
-    alert(
-      "An error occurred while submitting the recorded audio. Please try again."
-    );
+    toast.show("An error occurred while submitting the recorded audio. Please try again.", "error");
   }
 }
 
 // Display generated image
 function displayGeneratedImage(data) {
-  console.log("displayGeneratedImage called with:", data);
   const outputDiv = document.getElementById("audio-output");
   const generatedImage = document.getElementById("generated-image");
   const metadata = document.getElementById("ai-metadata");
@@ -231,11 +314,13 @@ function displayGeneratedImage(data) {
 
   // Scroll to output
   outputDiv.scrollIntoView({ behavior: "smooth" });
+  
+  // Show success message
+  toast.show("Image generated and displayed successfully!", "success");
 }
 
 // Display generated audio
 function displayGeneratedAudio(data) {
-  console.log("displayGeneratedAudio called with:", data);
   const outputDiv = document.getElementById("image-output");
   const generatedAudio = document.getElementById("generated-audio");
   const metadata = document.getElementById("image-metadata");
@@ -278,11 +363,13 @@ function displayGeneratedAudio(data) {
 
   // Scroll to output
   outputDiv.scrollIntoView({ behavior: "smooth" });
+  
+  // Show success message
+  toast.show("Audio generated and displayed successfully!", "success");
 }
 
 // On document load
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("DOM loaded, setting up event listeners");
 
   // Test if all required elements exist
   const requiredElements = [
@@ -297,19 +384,15 @@ document.addEventListener("DOMContentLoaded", function () {
     "image-preview",
   ];
 
-  console.log("Checking required elements:");
-  requiredElements.forEach((id) => {
-    const element = document.getElementById(id);
-    console.log(`${id}: ${!!element}`);
-  });
+  // requiredElements.forEach((id) => {
+  //   const element = document.getElementById(id);
+  // });
 
   // Add event listener to image form
   const imageForm = document.getElementById("image-form");
-  console.log("Image form found:", !!imageForm);
 
   if (imageForm) {
     imageForm.addEventListener("submit", function (event) {
-      console.log("Image form submitted");
       event.preventDefault();
 
       // Get form data
@@ -330,23 +413,18 @@ document.addEventListener("DOMContentLoaded", function () {
         },
       })
         .then((response) => {
-          console.log("Response status:", response.status);
           return response.json();
         })
         .then((data) => {
-          console.log("Image form response:", data);
           if (data.type === "audio") {
             displayGeneratedAudio(data);
+            toast.show("Audio generated successfully!", "success");
           } else if (data.type === "error") {
-            console.error("Server error:", data.error);
-            alert(`Error: ${data.error}`);
+            toast.show(`Error: ${data.error}`, "error");
           } else if (data.type === "quota_error") {
-            console.error("Quota error:", data.error);
-            alert(`OpenAI API Quota Error: ${data.error}\n\nPlease check your OpenAI billing and try again later.`);
+            toast.show(`OpenAI API Quota Error: ${data.error}. Please check your OpenAI billing and try again later.`, "error");
           } else {
-            console.error("Unknown response type:", data.type);
-            console.error("Full response data:", data);
-            alert("An unexpected error occurred. Please try again.");
+            toast.show("An unexpected error occurred. Please try again.", "error");
           }
           // Hide image conversion loader
           if (imageLoader) {
@@ -354,10 +432,7 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         })
         .catch(function (error) {
-          console.error("Image form error:", error);
-          alert(
-            "An error occurred during the AI image-to-audio conversion process. Please try again."
-          );
+          toast.show("An error occurred during the AI image-to-audio conversion process. Please try again.", "error");
           // Hide image conversion loader
           if (imageLoader) {
             imageLoader.classList.add("hidden");
@@ -368,11 +443,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Add event listener to audio form
   const audioForm = document.getElementById("audio-form");
-  console.log("Audio form found:", !!audioForm);
 
   if (audioForm) {
     audioForm.addEventListener("submit", function (event) {
-      console.log("Audio form submitted");
       event.preventDefault();
 
       // Check if we have either a file or recorded audio
@@ -380,15 +453,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const hasRecording =
         document.querySelector("#recordingPreview audio") !== null;
 
-      console.log("Audio form check:", {
-        audioFile: !!audioFile,
-        hasRecording: hasRecording,
-      });
-
       if (!audioFile && !hasRecording) {
-        alert(
-          "Please either upload an audio file or record audio before generating an image."
-        );
+        toast.show("Please either upload an audio file or record audio before generating an image.", "warning");
         return;
       }
 
@@ -410,23 +476,18 @@ document.addEventListener("DOMContentLoaded", function () {
         },
       })
         .then((response) => {
-          console.log("Response status:", response.status);
           return response.json();
         })
         .then((data) => {
-          console.log("Audio form response:", data);
           if (data.type === "image") {
             displayGeneratedImage(data);
+            toast.show("Image generated successfully!", "success");
           } else if (data.type === "error") {
-            console.error("Server error:", data.error);
-            alert(`Error: ${data.error}`);
+            toast.show(`Error: ${data.error}`, "error");
           } else if (data.type === "quota_error") {
-            console.error("Quota error:", data.error);
-            alert(`OpenAI API Quota Error: ${data.error}\n\nPlease check your OpenAI billing and try again later.`);
+            toast.show(`OpenAI API Quota Error: ${data.error}. Please check your OpenAI billing and try again later.`, "error");
           } else {
-            console.error("Unknown response type:", data.type);
-            console.error("Full response data:", data);
-            alert("An unexpected error occurred. Please try again.");
+            toast.show("An unexpected error occurred. Please try again.", "error");
           }
           // Hide audio conversion loader
           if (audioLoader) {
@@ -434,10 +495,7 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         })
         .catch(function (error) {
-          console.error("Audio form error:", error);
-          alert(
-            "An error occurred during the AI audio-to-image conversion process. Please try again."
-          );
+          toast.show("An error occurred during the AI audio-to-image conversion process. Please try again.", "error");
           // Hide audio conversion loader
           if (audioLoader) {
             audioLoader.classList.add("hidden");
@@ -446,26 +504,25 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // Add event listener to record button
+  const recordButton = document.getElementById("recordButton");
+  if (recordButton) {
+    recordButton.addEventListener("click", toggleRecording);
+  }
+
   // Add drag and drop functionality
   setupDragAndDrop();
 });
 
 // Preview Image function
 function previewImage(event) {
-  console.log("previewImage called");
   const input = event.target;
   if (input.files && input.files[0]) {
-    console.log("Image file selected:", input.files[0].name);
     const reader = new FileReader();
     reader.onload = function (e) {
       // Find the image preview container
       const imageDisplay = document.getElementById("image-display");
       const imagePreview = document.getElementById("image-preview");
-
-      console.log("Image preview elements:", {
-        imageDisplay: !!imageDisplay,
-        imagePreview: !!imagePreview,
-      });
 
       if (imagePreview) {
         const img = document.createElement("img");
@@ -481,7 +538,6 @@ function previewImage(event) {
           imageDisplay.classList.remove("hidden");
         }
       } else {
-        console.error("Image preview element not found!");
       }
     };
     reader.readAsDataURL(input.files[0]);
@@ -490,20 +546,13 @@ function previewImage(event) {
 
 // Preview Audio function
 function previewAudio(event) {
-  console.log("previewAudio called");
   const input = event.target;
   if (input.files && input.files[0]) {
-    console.log("Audio file selected:", input.files[0].name);
     const reader = new FileReader();
     reader.onload = function (e) {
       // Find the audio preview container
       const audioDisplay = document.getElementById("audio-display");
       const audioPreview = document.getElementById("audio-preview");
-
-      console.log("Audio preview elements:", {
-        audioDisplay: !!audioDisplay,
-        audioPreview: !!audioPreview,
-      });
 
       if (audioPreview) {
         const audio = document.createElement("audio");
@@ -522,7 +571,6 @@ function previewAudio(event) {
           audioDisplay.classList.remove("hidden");
         }
       } else {
-        console.error("Audio preview element not found!");
       }
     };
     reader.readAsDataURL(input.files[0]);
@@ -531,12 +579,9 @@ function previewAudio(event) {
 
 // Setup drag and drop functionality
 function setupDragAndDrop() {
-  console.log("Setting up drag and drop");
   const uploadAreas = document.querySelectorAll(".upload-area");
-  console.log("Upload areas found:", uploadAreas.length);
 
   uploadAreas.forEach((area, index) => {
-    console.log(`Setting up upload area ${index + 1}`);
     area.addEventListener("dragover", (e) => {
       e.preventDefault();
       area.classList.add("dragover");

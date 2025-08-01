@@ -13,6 +13,14 @@ app_settings:
     value: "audiovisualsys.settings"
   - name: "PYTHONPATH"
     value: "/home/site/wwwroot"
+  - name: "DEBUG"
+    value: "False"
+  - name: "DJANGO_SECRET_KEY"
+    value: "{{ DJANGO_SECRET_KEY }}"
+  - name: "OPENAI_API_KEY"
+    value: "{{ OPENAI_API_KEY }}"
+  - name: "ELEVENLABS_API_KEY"
+    value: "{{ ELEVENLABS_API_KEY }}"
 
 # Startup Command
 startup_command: "python manage.py runserver 0.0.0.0:%PORT%"
@@ -23,4 +31,38 @@ build_config:
   build_commands:
     - "pip install -r requirements.txt"
     - "python manage.py migrate --noinput"
-    - "python manage.py collectstatic --noinput" 
+    - "python manage.py collectstatic --noinput"
+    - "mkdir -p uploads image_files audio_files media"
+
+# Deployment Configuration
+deployment:
+  runtime: "python"
+  version: "3.11"
+  startup_file: "manage.py"
+  startup_command: "python manage.py runserver 0.0.0.0:%PORT%"
+
+# Environment Variables (to be set in Azure Portal)
+environment_variables:
+  - name: "DJANGO_SECRET_KEY"
+    description: "Django secret key for production"
+  - name: "OPENAI_API_KEY"
+    description: "OpenAI API key for AI features"
+  - name: "ELEVENLABS_API_KEY"
+    description: "ElevenLabs API key for audio generation"
+  - name: "DEBUG"
+    description: "Debug mode (False for production)"
+    value: "False"
+
+# Health Check Configuration
+health_check:
+  path: "/"
+  interval: "30s"
+  timeout: "10s"
+  unhealthy_threshold: 3
+  healthy_threshold: 1
+
+# Scaling Configuration
+scaling:
+  min_instances: 1
+  max_instances: 3
+  target_cpu_percentage: 70 

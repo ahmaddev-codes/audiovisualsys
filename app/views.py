@@ -273,11 +273,23 @@ def handle_recorded_audio(request):
         description_prompt = request.POST.get('description_prompt', '')
 
         if not audio_data:
+            print("Error: No audio data provided")
             return JsonResponse({'error': 'No audio data provided'}, status=400)
 
+        print(f"Audio data length: {len(audio_data)}")
+        print(f"Description prompt: {description_prompt}")
+
         # Decode base64 audio data
-        audio_bytes = base64.b64decode(
-            audio_data.split(',')[1])  # Remove data URL prefix
+        try:
+            # Remove data URL prefix if present
+            if ',' in audio_data:
+                audio_data = audio_data.split(',')[1]
+            
+            audio_bytes = base64.b64decode(audio_data)
+            print(f"Successfully decoded {len(audio_bytes)} bytes of audio data")
+        except Exception as e:
+            print(f"Error decoding base64 audio data: {e}")
+            return JsonResponse({'error': 'Invalid audio data format'}, status=400)
 
         # Create conversion session
         session = ConversionSession.objects.create(
@@ -289,14 +301,31 @@ def handle_recorded_audio(request):
         # Save recorded audio
         audio_dir = BASE_DIR / "uploads"
         os.makedirs(audio_dir, exist_ok=True)
-        input_path = audio_dir / f"recorded_{session.session_id}.wav"
+        input_path = audio_dir / f"recorded_{session.session_id}.webm"
 
         with open(input_path, 'wb') as f:
             f.write(audio_bytes)
 
+        print(f"Saved recorded audio to: {input_path}")
+        
+        # Verify file exists and has content
+        if not input_path.exists():
+            print(f"Error: File was not created: {input_path}")
+            return JsonResponse({'error': 'Failed to save audio file'}, status=500)
+            
+        file_size = input_path.stat().st_size
+        print(f"File size: {file_size} bytes")
+        
+        if file_size == 0:
+            print(f"Error: File is empty: {input_path}")
+            return JsonResponse({'error': 'Audio file is empty'}, status=500)
+
         # Convert using AI
+        print(f"Starting AI conversion for recorded audio...")
         converter = convert.AIConverter()
         result = converter.audio_to_image(str(input_path), description_prompt)
+
+        print(f"AI conversion result: {result}")
 
         if result['success']:
             # Save output image
@@ -336,11 +365,43 @@ def handle_recorded_audio(request):
             session.error_message = result['error']
             session.save()
 
-            return JsonResponse({'error': result['error']}, status=500)
+            # Check if it's a quota error
+            error_message = result['error']
+            if 'insufficient_quota' in error_message or 'quota' in error_message.lower():
+                error_response = {
+                    'type': 'quota_error',
+                    'error': 'OpenAI API quota exceeded. Please check your billing and try again later.',
+                    'details': error_message
+                }
+            else:
+                error_response = {
+                    'type': 'error',
+                    'error': error_message
+                }
+
+            print(f"AI conversion failed: {error_message}")
+            return JsonResponse(error_response, status=500)
 
     except Exception as e:
         print(f"Error in handle_recorded_audio: {e}")
-        return JsonResponse({'error': str(e)}, status=500)
+        import traceback
+        traceback.print_exc()
+        
+        # Check if it's a quota error
+        error_message = str(e)
+        if 'insufficient_quota' in error_message or 'quota' in error_message.lower():
+            error_response = {
+                'type': 'quota_error',
+                'error': 'OpenAI API quota exceeded. Please check your billing and try again later.',
+                'details': error_message
+            }
+        else:
+            error_response = {
+                'type': 'error',
+                'error': error_message
+            }
+        
+        return JsonResponse(error_response, status=500)
 
 # Legacy functions for backward compatibility
 

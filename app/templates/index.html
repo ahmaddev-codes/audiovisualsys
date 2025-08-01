@@ -11,81 +11,218 @@
       href="{% static 'images/favicon.ico' %}"
       type="image/x-icon"
     />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              github: {
-                bg: '#0d1117',
-                border: '#30363d',
-                text: '#c9d1d9',
-                muted: '#8b949e',
-                accent: '#238636',
-                accentHover: '#2ea043',
-                danger: '#f85149',
-                warning: '#d29922'
-              }
-            }
-          }
-        }
-      }
-    </script>
+    <!-- Production Tailwind CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
+      /* Custom GitHub-style theme */
+      :root {
+        --github-bg: #0d1117;
+        --github-border: #30363d;
+        --github-text: #c9d1d9;
+        --github-muted: #8b949e;
+        --github-accent: #238636;
+        --github-accent-hover: #2ea043;
+        --github-danger: #f85149;
+        --github-warning: #d29922;
+      }
+
+      body {
+        background-color: var(--github-bg);
+        color: var(--github-text);
+        min-height: 100vh;
+      }
+
       .github-card {
-        background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
-        border: 1px solid #30363d;
+        background: linear-gradient(135deg, var(--github-bg) 0%, #161b22 100%);
+        border: 1px solid var(--github-border);
         box-shadow: 0 8px 24px rgba(1, 4, 9, 0.3);
       }
+
       .github-button {
-        background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+        background: linear-gradient(
+          135deg,
+          var(--github-accent) 0%,
+          var(--github-accent-hover) 100%
+        );
         transition: all 0.2s ease;
       }
+
       .github-button:hover {
-        background: linear-gradient(135deg, #2ea043 0%, #3fb950 100%);
+        background: linear-gradient(
+          135deg,
+          var(--github-accent-hover) 0%,
+          #3fb950 100%
+        );
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(35, 134, 54, 0.4);
       }
+
       .upload-area {
-        border: 2px dashed #30363d;
+        border: 2px dashed var(--github-border);
         transition: all 0.2s ease;
       }
+
       .upload-area:hover {
-        border-color: #238636;
+        border-color: var(--github-accent);
         background-color: rgba(35, 134, 54, 0.1);
       }
+
       .upload-area.dragover {
-        border-color: #238636;
+        border-color: var(--github-accent);
         background-color: rgba(35, 134, 54, 0.2);
       }
+
       .loader {
-        border: 2px solid #30363d;
-        border-top: 2px solid #238636;
+        border: 2px solid var(--github-border);
+        border-top: 2px solid var(--github-accent);
         border-radius: 50%;
         width: 20px;
         height: 20px;
         animation: spin 1s linear infinite;
       }
+
       @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .icon {
+        width: 1.5rem;
+        height: 1.5rem;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .icon-sm {
+        width: 1rem;
+        height: 1rem;
+      }
+
+      .icon-lg {
+        width: 2rem;
+        height: 2rem;
+      }
+
+      .icon-xl {
+        width: 3rem;
+        height: 3rem;
+      }
+
+      /* Toast notification styles */
+      .toast-enter {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      .toast-enter-active {
+        transform: translateX(0);
+        opacity: 1;
+        transition: all 0.3s ease;
+      }
+
+      .toast-exit {
+        transform: translateX(0);
+        opacity: 1;
+      }
+
+      .toast-exit-active {
+        transform: translateX(100%);
+        opacity: 0;
+        transition: all 0.3s ease;
+      }
+
+      /* Custom utility classes */
+      .bg-github-bg {
+        background-color: var(--github-bg);
+      }
+      .bg-github-border {
+        background-color: var(--github-border);
+      }
+      .text-github-text {
+        color: var(--github-text);
+      }
+      .text-github-muted {
+        color: var(--github-muted);
+      }
+      .text-github-accent {
+        color: var(--github-accent);
+      }
+      .border-github-border {
+        border-color: var(--github-border);
+      }
+      .bg-github-accent\/20 {
+        background-color: rgba(35, 134, 54, 0.2);
+      }
+      .bg-github-border\/50 {
+        background-color: rgba(48, 54, 61, 0.5);
+      }
+      .bg-github-accent\/20 {
+        background-color: rgba(35, 134, 54, 0.2);
+      }
+      .bg-blue-500\/20 {
+        background-color: rgba(59, 130, 246, 0.2);
+      }
+      .bg-green-500\/20 {
+        background-color: rgba(34, 197, 94, 0.2);
+      }
+      .bg-purple-500\/20 {
+        background-color: rgba(147, 51, 234, 0.2);
+      }
+      .text-blue-400 {
+        color: #60a5fa;
+      }
+      .text-green-400 {
+        color: #4ade80;
+      }
+      .text-purple-400 {
+        color: #a78bfa;
+      }
+      .text-red-400 {
+        color: #f87171;
+      }
+      .text-green-400 {
+        color: #4ade80;
+      }
+      .bg-red-600 {
+        background-color: #dc2626;
+      }
+      .hover\:bg-red-700:hover {
+        background-color: #b91c1c;
       }
     </style>
   </head>
   <body class="bg-github-bg text-github-text min-h-screen">
     <!-- Header -->
-    <header class="border-b border-github-border bg-github-bg/50 backdrop-blur-sm sticky top-0 z-50">
+    <header
+      class="border-b border-github-border bg-github-bg/50 backdrop-blur-sm sticky top-0 z-50"
+    >
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 bg-github-accent rounded-lg flex items-center justify-center">
-              <span class="text-white font-bold text-lg">🤖</span>
+            <div
+              class="w-8 h-8 bg-github-accent rounded-lg flex items-center justify-center"
+            >
+              <i data-lucide="bot" class="icon text-white"></i>
             </div>
-            <h1 class="text-xl font-semibold text-github-text">AI AudioVisual System</h1>
+            <h1 class="text-xl font-semibold text-github-text">
+              AI AudioVisual System
+            </h1>
           </div>
-          <div class="text-sm text-github-muted">
-            Powered by OpenAI & ElevenLabs
+          <div class="text-sm text-github-muted flex items-center space-x-2">
+            <i data-lucide="zap" class="icon-sm"></i>
+            <span>Powered by OpenAI & ElevenLabs</span>
           </div>
         </div>
       </div>
@@ -96,10 +233,12 @@
       <!-- Hero Section -->
       <div class="text-center mb-12">
         <h2 class="text-4xl font-bold text-github-text mb-4">
-          Convert Audio to Images & Images to Audio
+          Convert Audio to Images & Image to Audio
         </h2>
         <p class="text-lg text-github-muted max-w-2xl mx-auto">
-          Transform your audio recordings into stunning AI-generated images, or convert images into natural-sounding audio descriptions using cutting-edge AI technology.
+          Transform your audio recordings into stunning AI-generated images, or
+          convert images into natural-sounding audio descriptions using
+          cutting-edge AI technology.
         </p>
       </div>
 
@@ -108,29 +247,43 @@
         <!-- Audio to Image Card -->
         <div class="github-card rounded-xl p-6">
           <div class="flex items-center space-x-3 mb-6">
-            <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-              <span class="text-2xl">🎤</span>
+            <div
+              class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center"
+            >
+              <i data-lucide="mic" class="icon text-blue-400"></i>
             </div>
             <div>
-              <h3 class="text-xl font-semibold text-github-text">Audio to Image</h3>
-              <p class="text-sm text-github-muted">Generate images from audio recordings</p>
+              <h3 class="text-xl font-semibold text-github-text">
+                Audio to Image
+              </h3>
+              <p class="text-sm text-github-muted">
+                Generate images from audio recordings
+              </p>
             </div>
           </div>
 
           <form id="audio-form" class="space-y-6" enctype="multipart/form-data">
             {% csrf_token %}
-            
+
             <!-- Recording Section -->
             <div class="space-y-4">
               <div class="flex items-center space-x-2">
-                <span class="text-lg">🎙️</span>
+                <i data-lucide="radio" class="icon-sm text-github-muted"></i>
                 <h4 class="font-medium text-github-text">Record Audio</h4>
               </div>
               <div class="flex items-center space-x-3">
-                <button type="button" id="recordButton" class="github-button px-4 py-2 rounded-lg text-white font-medium">
-                  🎤 Start Recording
+                <button
+                  type="button"
+                  id="recordButton"
+                  class="github-button px-4 py-2 rounded-lg text-white font-medium flex items-center space-x-2"
+                >
+                  <i data-lucide="mic" class="icon-sm"></i>
+                  <span>Start Recording</span>
                 </button>
-                <div id="recordingStatus" class="text-sm text-github-muted"></div>
+                <div
+                  id="recordingStatus"
+                  class="text-sm text-github-muted"
+                ></div>
               </div>
               <div id="recordingPreview" class="hidden"></div>
             </div>
@@ -138,31 +291,58 @@
             <!-- File Upload Section -->
             <div class="space-y-4">
               <div class="flex items-center space-x-2">
-                <span class="text-lg">📁</span>
-                <h4 class="font-medium text-github-text">Or Upload Audio File</h4>
+                <i
+                  data-lucide="folder-up"
+                  class="icon-sm text-github-muted"
+                ></i>
+                <h4 class="font-medium text-github-text">
+                  Or Upload Audio File
+                </h4>
               </div>
-              <label for="audio-file" class="upload-area block p-6 rounded-lg cursor-pointer text-center">
+              <label
+                for="audio-file"
+                class="upload-area block p-6 rounded-lg cursor-pointer text-center"
+              >
                 <div class="space-y-3">
-                  <div class="w-12 h-12 bg-github-accent/20 rounded-lg flex items-center justify-center mx-auto">
-                    <span class="text-2xl">📤</span>
+                  <div
+                    class="w-12 h-12 bg-github-accent/20 rounded-lg flex items-center justify-center mx-auto"
+                  >
+                    <i
+                      data-lucide="upload"
+                      class="icon-lg text-github-accent"
+                    ></i>
                   </div>
                   <div>
-                    <p class="text-github-text font-medium">Click to upload audio file</p>
+                    <p class="text-github-text font-medium">
+                      Click to upload audio file
+                    </p>
                     <p class="text-sm text-github-muted">or drag and drop</p>
                   </div>
                 </div>
-                <input type="file" id="audio-file" name="audio_file" accept="audio/*" class="hidden" onchange="previewAudio(event)" />
+                <input
+                  type="file"
+                  id="audio-file"
+                  name="audio_file"
+                  accept="audio/*"
+                  class="hidden"
+                  onchange="previewAudio(event)"
+                />
               </label>
               <div id="audio-display" class="hidden">
-                <div id="audio-preview" class="bg-github-border/50 rounded-lg p-4"></div>
+                <div
+                  id="audio-preview"
+                  class="bg-github-border/50 rounded-lg p-4"
+                ></div>
               </div>
             </div>
 
             <!-- AI Description Prompt -->
             <div class="space-y-3">
               <div class="flex items-center space-x-2">
-                <span class="text-lg">✨</span>
-                <h4 class="font-medium text-github-text">AI Description Prompt (Optional)</h4>
+                <i data-lucide="sparkles" class="icon-sm text-github-muted"></i>
+                <h4 class="font-medium text-github-text">
+                  AI Description Prompt (Optional)
+                </h4>
               </div>
               <textarea
                 name="description_prompt"
@@ -174,8 +354,11 @@
             </div>
 
             <!-- Submit Button -->
-            <button type="submit" class="github-button w-full py-3 rounded-lg text-white font-medium flex items-center justify-center space-x-2">
-              <span>🎨</span>
+            <button
+              type="submit"
+              class="github-button w-full py-3 rounded-lg text-white font-medium flex items-center justify-center space-x-2"
+            >
+              <i data-lucide="image" class="icon-sm"></i>
               <span>Generate Image with AI</span>
               <div id="audio-conversion-loader" class="loader hidden"></div>
             </button>
@@ -184,9 +367,20 @@
           <!-- Output Display -->
           <div id="audio-output" class="mt-6 hidden">
             <div class="border-t border-github-border pt-6">
-              <h4 class="font-medium text-github-text mb-4">🎨 Generated Image</h4>
-              <div id="generated-image" class="bg-github-border/50 rounded-lg p-4"></div>
-              <div id="ai-metadata" class="mt-4 text-sm text-github-muted"></div>
+              <h4
+                class="font-medium text-github-text mb-4 flex items-center space-x-2"
+              >
+                <i data-lucide="image" class="icon-sm"></i>
+                <span>Generated Image</span>
+              </h4>
+              <div
+                id="generated-image"
+                class="bg-github-border/50 rounded-lg p-4"
+              ></div>
+              <div
+                id="ai-metadata"
+                class="mt-4 text-sm text-github-muted"
+              ></div>
             </div>
           </div>
         </div>
@@ -194,12 +388,18 @@
         <!-- Image to Audio Card -->
         <div class="github-card rounded-xl p-6">
           <div class="flex items-center space-x-3 mb-6">
-            <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-              <span class="text-2xl">🖼️</span>
+            <div
+              class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center"
+            >
+              <i data-lucide="image" class="icon text-green-400"></i>
             </div>
             <div>
-              <h3 class="text-xl font-semibold text-github-text">Image to Audio</h3>
-              <p class="text-sm text-github-muted">Generate audio from images</p>
+              <h3 class="text-xl font-semibold text-github-text">
+                Image to Audio
+              </h3>
+              <p class="text-sm text-github-muted">
+                Generate audio from images
+              </p>
             </div>
           </div>
 
@@ -209,33 +409,58 @@
             <!-- File Upload Section -->
             <div class="space-y-4">
               <div class="flex items-center space-x-2">
-                <span class="text-lg">📁</span>
+                <i
+                  data-lucide="folder-up"
+                  class="icon-sm text-github-muted"
+                ></i>
                 <h4 class="font-medium text-github-text">Upload Image</h4>
               </div>
-              <label for="image_file" class="upload-area block p-6 rounded-lg cursor-pointer text-center">
+              <label
+                for="image_file"
+                class="upload-area block p-6 rounded-lg cursor-pointer text-center"
+              >
                 <div class="space-y-3">
-                  <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto">
-                    <span class="text-2xl">📤</span>
+                  <div
+                    class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto"
+                  >
+                    <i data-lucide="upload" class="icon-lg text-green-400"></i>
                   </div>
                   <div>
-                    <p class="text-github-text font-medium">Click to upload image</p>
+                    <p class="text-github-text font-medium">
+                      Click to upload image
+                    </p>
                     <p class="text-sm text-github-muted">or drag and drop</p>
                   </div>
                 </div>
-                <input type="file" name="image_file" id="image_file" accept="image/*" required class="hidden" onchange="previewImage(event)" />
+                <input
+                  type="file"
+                  name="image_file"
+                  id="image_file"
+                  accept="image/*"
+                  required
+                  class="hidden"
+                  onchange="previewImage(event)"
+                />
               </label>
               <div id="image-display" class="hidden">
-                <div id="image-preview" class="bg-github-border/50 rounded-lg p-4"></div>
+                <div
+                  id="image-preview"
+                  class="bg-github-border/50 rounded-lg p-4"
+                ></div>
               </div>
             </div>
 
             <!-- Voice Preferences -->
             <div class="space-y-4">
               <div class="flex items-center space-x-2">
-                <span class="text-lg">🎵</span>
+                <i data-lucide="volume-2" class="icon-sm text-github-muted"></i>
                 <h4 class="font-medium text-github-text">Voice Preferences</h4>
               </div>
-              <select name="voice_preference" id="voice-preference" class="w-full px-3 py-2 bg-github-bg border border-github-border rounded-lg text-github-text focus:outline-none focus:ring-2 focus:ring-github-accent focus:border-transparent">
+              <select
+                name="voice_preference"
+                id="voice-preference"
+                class="w-full px-3 py-2 bg-github-bg border border-github-border rounded-lg text-github-text focus:outline-none focus:ring-2 focus:ring-github-accent focus:border-transparent"
+              >
                 <option value="Rachel">Rachel (Female, Clear)</option>
                 <option value="Domi">Domi (Female, Warm)</option>
                 <option value="Bella">Bella (Female, Soft)</option>
@@ -243,7 +468,7 @@
                 <option value="Thiago">Thiago (Male, Friendly)</option>
                 <option value="Josh">Josh (Male, Professional)</option>
               </select>
-              
+
               <textarea
                 name="description_style"
                 id="description-style"
@@ -254,8 +479,11 @@
             </div>
 
             <!-- Submit Button -->
-            <button type="submit" class="github-button w-full py-3 rounded-lg text-white font-medium flex items-center justify-center space-x-2">
-              <span>🎵</span>
+            <button
+              type="submit"
+              class="github-button w-full py-3 rounded-lg text-white font-medium flex items-center justify-center space-x-2"
+            >
+              <i data-lucide="volume-2" class="icon-sm"></i>
               <span>Generate Audio with AI</span>
               <div id="image-conversion-loader" class="loader hidden"></div>
             </button>
@@ -264,9 +492,20 @@
           <!-- Output Display -->
           <div id="image-output" class="mt-6 hidden">
             <div class="border-t border-github-border pt-6">
-              <h4 class="font-medium text-github-text mb-4">🎵 Generated Audio</h4>
-              <div id="generated-audio" class="bg-github-border/50 rounded-lg p-4"></div>
-              <div id="image-metadata" class="mt-4 text-sm text-github-muted"></div>
+              <h4
+                class="font-medium text-github-text mb-4 flex items-center space-x-2"
+              >
+                <i data-lucide="volume-2" class="icon-sm"></i>
+                <span>Generated Audio</span>
+              </h4>
+              <div
+                id="generated-audio"
+                class="bg-github-border/50 rounded-lg p-4"
+              ></div>
+              <div
+                id="image-metadata"
+                class="mt-4 text-sm text-github-muted"
+              ></div>
             </div>
           </div>
         </div>
@@ -275,29 +514,51 @@
       <!-- Features Section -->
       <div class="mt-16 grid md:grid-cols-3 gap-6">
         <div class="github-card rounded-xl p-6 text-center">
-          <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span class="text-2xl">🎨</span>
+          <div
+            class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-4"
+          >
+            <i data-lucide="palette" class="icon-lg text-blue-400"></i>
           </div>
-          <h3 class="font-semibold text-github-text mb-2">AI Image Generation</h3>
-          <p class="text-sm text-github-muted">Transform audio into stunning visuals using DALL-E 3</p>
+          <h3 class="font-semibold text-github-text mb-2">
+            AI Image Generation
+          </h3>
+          <p class="text-sm text-github-muted">
+            Transform audio into stunning visuals using DALL-E 3
+          </p>
         </div>
         <div class="github-card rounded-xl p-6 text-center">
-          <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span class="text-2xl">🎵</span>
+          <div
+            class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-4"
+          >
+            <i data-lucide="volume-2" class="icon-lg text-green-400"></i>
           </div>
-          <h3 class="font-semibold text-github-text mb-2">Natural Voice Synthesis</h3>
-          <p class="text-sm text-github-muted">Convert images to natural-sounding audio with ElevenLabs</p>
+          <h3 class="font-semibold text-github-text mb-2">
+            Natural Voice Synthesis
+          </h3>
+          <p class="text-sm text-github-muted">
+            Convert images to natural-sounding audio with ElevenLabs
+          </p>
         </div>
         <div class="github-card rounded-xl p-6 text-center">
-          <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span class="text-2xl">🤖</span>
+          <div
+            class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mx-auto mb-4"
+          >
+            <i data-lucide="brain" class="icon-lg text-purple-400"></i>
           </div>
-          <h3 class="font-semibold text-github-text mb-2">Advanced AI Models</h3>
-          <p class="text-sm text-github-muted">Powered by Whisper, GPT-4, and GPT-4V</p>
+          <h3 class="font-semibold text-github-text mb-2">
+            Advanced AI Models
+          </h3>
+          <p class="text-sm text-github-muted">
+            Powered by Whisper, GPT-4, and GPT-4V
+          </p>
         </div>
       </div>
     </main>
 
     <script src="{% static 'js/index.js' %}"></script>
+    <script>
+      // Initialize Lucide icons
+      lucide.createIcons();
+    </script>
   </body>
 </html>

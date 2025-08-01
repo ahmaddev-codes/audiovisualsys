@@ -25,23 +25,35 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-5+gulo&-k+^k55t18^u7jot6$_dncz3d=$%whgpjzjizfji=g$'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-5+gulo&-k+^k55t18^u7jot6$_dncz3d=$%whgpjzjizfji=g$')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-# CSRF_COOKIE_SECURE = True  # Use Secure flag for CSRF cookies
-# CSRF_COOKIE_HTTPONLY = True  # Prevent JavaScript access to CSRF cookies
-# CSRF_TRUSTED_ORIGINS = ['https://audiovisualsys.azurewebsites.net']  # Trusted origins for CSRF
+# Production Security Settings
+if not DEBUG:
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+    CSRF_TRUSTED_ORIGINS = [
+        'https://audiovisualsys.azurewebsites.net',
+        'https://*.azurewebsites.net'
+    ]
+    SESSION_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
-# # Additional settings
-# SESSION_COOKIE_SECURE = True  # Use Secure flag for session cookies
-# SECURE_BROWSER_XSS_FILTER = True  # Enable browser XSS protection
-# SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent the browser from MIME-sniffing a response
-# X_FRAME_OPTIONS = 'DENY'  # Prevent clickjacking
-# SECURE_SSL_REDIRECT = True  # Redirect HTTP to HTTPS
-
-ALLOWED_HOSTS = ['*', 'audiovisualsys.azurewebsites.net']
+ALLOWED_HOSTS = [
+    'audiovisualsys.azurewebsites.net',
+    '*.azurewebsites.net',
+    'localhost',
+    '127.0.0.1',
+    '*'
+]
 
 
 # Application definition
@@ -159,11 +171,20 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'error.log'),
         },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+        },
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['file', 'console'],
             'level': 'ERROR',
+            'propagate': True,
+        },
+        'app': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
             'propagate': True,
         },
     },
