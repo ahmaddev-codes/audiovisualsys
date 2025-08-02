@@ -24,31 +24,10 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Cache pip dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Set up environment variables for build
-        run: |
-          echo "DJANGO_SETTINGS_MODULE=audiovisualsys.settings" >> $GITHUB_ENV
-          echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-          echo "DEBUG=False" >> $GITHUB_ENV
-
-      - name: Verify deployment files
-        run: |
-          echo "Checking deployment files..."
-          ls -la
-          echo "Checking requirements.txt..."
-          cat requirements.txt
 
       - name: Create necessary directories
         run: |
@@ -57,22 +36,6 @@ jobs:
       - name: Collect static files
         run: |
           python manage.py collectstatic --noinput
-
-      - name: Verify startup files
-        run: |
-          echo "Checking startup.txt..."
-          if [ -f startup.txt ]; then
-            cat startup.txt
-          else
-            echo "startup.txt not found"
-          fi
-          
-          echo "Checking startup.sh..."
-          if [ -f startup.sh ]; then
-            cat startup.sh
-          else
-            echo "startup.sh not found"
-          fi
 
       - name: Deploy to Azure Web App (Linux)
         uses: azure/webapps-deploy@v3
@@ -85,3 +48,16 @@ jobs:
         run: |
           echo "Waiting for deployment to complete..."
           sleep 30
+
+      - name: Health check
+        run: |
+          echo "Checking if application is responding..."
+          for i in {1..10}; do
+            if curl -f -s https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/ > /dev/null; then
+              echo "✅ Application is responding!"
+              break
+            else
+              echo "⏳ Attempt $i: Application not ready yet..."
+              sleep 30
+            fi
+          done
