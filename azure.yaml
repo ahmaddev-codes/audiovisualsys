@@ -1,5 +1,5 @@
-# Azure App Service Configuration
-# This file contains configuration for Azure App Service deployment
+# Azure App Service Configuration (Linux)
+# This file contains configuration for Azure App Service deployment on Linux
 
 # Application Settings
 app_settings:
@@ -22,8 +22,8 @@ app_settings:
   - name: "ELEVENLABS_API_KEY"
     value: "{{ ELEVENLABS_API_KEY }}"
 
-# Startup Command
-startup_command: "python manage.py runserver 0.0.0.0:%PORT%"
+# Startup Command (Linux - using gunicorn)
+startup_command: "gunicorn --bind 0.0.0.0:$PORT audiovisualsys.wsgi:application"
 
 # Build Configuration
 build_config:
@@ -34,12 +34,12 @@ build_config:
     - "python manage.py collectstatic --noinput"
     - "mkdir -p uploads image_files audio_files media"
 
-# Deployment Configuration
+# Deployment Configuration (Linux)
 deployment:
   runtime: "python"
   version: "3.11"
-  startup_file: "manage.py"
-  startup_command: "python manage.py runserver 0.0.0.0:%PORT%"
+  startup_file: "startup.sh"
+  startup_command: "gunicorn --bind 0.0.0.0:$PORT audiovisualsys.wsgi:application"
 
 # Environment Variables (to be set in Azure Portal)
 environment_variables:
@@ -65,4 +65,4 @@ health_check:
 scaling:
   min_instances: 1
   max_instances: 3
-  target_cpu_percentage: 70 
+  target_cpu_percentage: 70

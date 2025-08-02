@@ -1,4 +1,4 @@
-name: Deploy Django app to Azure Web App
+name: Deploy Django app to Azure Web App (Linux)
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 env:
   AZURE_WEBAPP_NAME: audiovisualsys
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: "3.11"
 
 jobs:
   build-and-deploy:
@@ -49,8 +49,6 @@ jobs:
           ls -la
           echo "Checking requirements.txt..."
           cat requirements.txt
-          echo "Checking web.config..."
-          cat web.config
 
       - name: Create necessary directories
         run: |
@@ -60,44 +58,53 @@ jobs:
         run: |
           python manage.py collectstatic --noinput
 
-      - name: Create web.config for Windows App Service
+      - name: Create startup.sh for Linux App Service
         run: |
-          cat > web.config << 'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <configuration>
-            <system.webServer>
-              <handlers>
-                <add name="httpPlatformHandler" path="*" verb="*" modules="httpPlatformHandler" resourceType="Unspecified" />
-              </handlers>
-              <httpPlatform processPath="%home%\site\wwwroot\env\Scripts\python.exe"
-                            arguments="%home%\site\wwwroot\manage.py runserver 0.0.0.0:%HTTP_PLATFORM_PORT%"
-                            stdoutLogEnabled="true"
-                            stdoutLogFile="%home%\LogFiles\stdout"
-                            startupTimeLimit="60">
-                <environmentVariables>
-                  <environmentVariable name="PORT" value="%HTTP_PLATFORM_PORT%" />
-                  <environmentVariable name="DJANGO_SETTINGS_MODULE" value="audiovisualsys.settings" />
-                  <environmentVariable name="PYTHONPATH" value="%home%\site\wwwroot" />
-                </environmentVariables>
-              </httpPlatform>
-            </system.webServer>
-          </configuration>
+          cat > startup.sh << 'EOF'
+          #!/bin/bash
+          cd /home/site/wwwroot
+          python manage.py migrate --noinput
+          python manage.py collectstatic --noinput
+          gunicorn --bind 0.0.0.0:$PORT audiovisualsys.wsgi:application
           EOF
-          
-      - name: Verify web.config
-        run: |
-          echo "Generated web.config content:"
-          cat web.config
+          chmod +x startup.sh
 
-      - name: Create startup.txt for Azure
+      - name: Create .deployment file for Linux
         run: |
-          echo "python manage.py runserver 0.0.0.0:%HTTP_PLATFORM_PORT%" > startup.txt
+          cat > .deployment << 'EOF'
+          [config]
+          SCM_DO_BUILD_DURING_DEPLOYMENT=true
+          EOF
 
-      - name: Deploy to Azure Web App
+      - name: Create requirements.txt for deployment (if not exists)
+        run: |
+          if [ ! -f requirements.txt ]; then
+            echo "Django>=4.2.0" > requirements.txt
+            echo "gunicorn>=20.1.0" >> requirements.txt
+            echo "whitenoise>=6.5.0" >> requirements.txt
+          else
+            # Ensure gunicorn is in requirements.txt
+            if ! grep -q "gunicorn" requirements.txt; then
+              echo "gunicorn>=20.1.0" >> requirements.txt
+            fi
+            # Ensure whitenoise is in requirements.txt
+            if ! grep -q "whitenoise" requirements.txt; then
+              echo "whitenoise>=6.5.0" >> requirements.txt
+            fi
+          fi
+
+      - name: Verify startup.sh
+        run: |
+          echo "Generated startup.sh content:"
+          cat startup.sh
+          echo "File permissions:"
+          ls -la startup.sh
+
+      - name: Deploy to Azure Web App (Linux)
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          slot-name: 'production'
+          slot-name: "production"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
 
       - name: Wait for deployment
@@ -110,5 +117,5 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          slot-name: 'production'
+          slot-name: "production"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
