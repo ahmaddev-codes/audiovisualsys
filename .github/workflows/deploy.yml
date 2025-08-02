@@ -58,47 +58,21 @@ jobs:
         run: |
           python manage.py collectstatic --noinput
 
-      - name: Create startup.sh for Linux App Service
+      - name: Verify startup files
         run: |
-          cat > startup.sh << 'EOF'
-          #!/bin/bash
-          cd /home/site/wwwroot
-          python manage.py migrate --noinput
-          python manage.py collectstatic --noinput
-          gunicorn --bind 0.0.0.0:$PORT audiovisualsys.wsgi:application
-          EOF
-          chmod +x startup.sh
-
-      - name: Create .deployment file for Linux
-        run: |
-          cat > .deployment << 'EOF'
-          [config]
-          SCM_DO_BUILD_DURING_DEPLOYMENT=true
-          EOF
-
-      - name: Create requirements.txt for deployment (if not exists)
-        run: |
-          if [ ! -f requirements.txt ]; then
-            echo "Django>=4.2.0" > requirements.txt
-            echo "gunicorn>=20.1.0" >> requirements.txt
-            echo "whitenoise>=6.5.0" >> requirements.txt
+          echo "Checking startup.txt..."
+          if [ -f startup.txt ]; then
+            cat startup.txt
           else
-            # Ensure gunicorn is in requirements.txt
-            if ! grep -q "gunicorn" requirements.txt; then
-              echo "gunicorn>=20.1.0" >> requirements.txt
-            fi
-            # Ensure whitenoise is in requirements.txt
-            if ! grep -q "whitenoise" requirements.txt; then
-              echo "whitenoise>=6.5.0" >> requirements.txt
-            fi
+            echo "startup.txt not found"
           fi
-
-      - name: Verify startup.sh
-        run: |
-          echo "Generated startup.sh content:"
-          cat startup.sh
-          echo "File permissions:"
-          ls -la startup.sh
+          
+          echo "Checking startup.sh..."
+          if [ -f startup.sh ]; then
+            cat startup.sh
+          else
+            echo "startup.sh not found"
+          fi
 
       - name: Deploy to Azure Web App (Linux)
         uses: azure/webapps-deploy@v3
@@ -111,11 +85,3 @@ jobs:
         run: |
           echo "Waiting for deployment to complete..."
           sleep 30
-
-      - name: Deploy to Azure Web App - Alternative
-        if: failure()
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          slot-name: "production"
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}

@@ -15,6 +15,7 @@
 - [x] AI libraries (OpenAI, ElevenLabs, Whisper) included
 - [x] Django and core dependencies specified
 - [x] Version pinning for stability
+- [x] Production dependencies (gunicorn, whitenoise) included
 
 ### 3. **File Structure**
 - [x] Django project structure correct
@@ -24,9 +25,11 @@
 - [x] URL routing configured
 
 ### 4. **Azure Configuration Files**
-- [x] web.config for Windows App Service
+- [x] startup.sh for Linux App Service
 - [x] startup.txt for Azure deployment
+- [x] web.config for Windows fallback
 - [x] azure.yaml configuration
+- [x] .deployment file with build commands
 - [x] GitHub Actions workflow
 
 ### 5. **Environment Variables Required**
@@ -57,7 +60,7 @@ ELEVENLABS_API_KEY = [your-elevenlabs-key]
 
 ### 2. **General Settings**
 - [ ] Python version: 3.11
-- [ ] Operating System: Windows
+- [ ] Operating System: Linux
 - [ ] Stack: Python
 
 ## 🔑 GitHub Secrets Setup
@@ -108,16 +111,24 @@ python manage.py runserver
 
 ## 🔍 Troubleshooting
 
+### Current Deployment Issues:
+1. **Oryx build hanging**: Fixed by updating startup configuration
+2. **Missing startup files**: Created startup.sh and startup.txt
+3. **Build process stuck**: Simplified GitHub Actions workflow
+4. **Dependency conflicts**: Pinned versions in requirements.txt
+
 ### Common Issues:
 1. **Static files not loading**: Run `python manage.py collectstatic`
 2. **Database errors**: Run `python manage.py migrate`
 3. **API key errors**: Check environment variables in Azure Portal
 4. **File permission errors**: Check directory permissions
+5. **Build timeout**: Check requirements.txt for heavy dependencies
 
 ### Logs to Check:
 - Azure Portal → Log stream
 - GitHub Actions → Deployment logs
 - Application error logs
+- Kudu console logs
 
 ## 📊 Monitoring
 
@@ -167,7 +178,29 @@ python manage.py runserver
 - [ ] Security measures are in place
 - [ ] Monitoring is configured
 
+## 🚨 Recent Fixes Applied
+
+### 1. **Startup Configuration**
+- Created `startup.sh` with proper gunicorn configuration
+- Created `startup.txt` for Azure App Service
+- Updated `web.config` for Windows fallback
+
+### 2. **Build Process**
+- Simplified GitHub Actions workflow
+- Removed conflicting startup script generation
+- Added proper build commands in `.deployment`
+
+### 3. **Dependencies**
+- Pinned all dependency versions
+- Added production dependencies (gunicorn, whitenoise)
+- Removed version ranges that could cause conflicts
+
+### 4. **Azure Configuration**
+- Updated `azure.yaml` with correct startup commands
+- Added proper build configuration
+- Fixed deployment settings
+
 ---
 
-**Last Updated**: August 1st, 2025
-**Status**: Ready for Deployment ✅
+**Last Updated**: August 2nd, 2025
+**Status**: Fixed Deployment Issues ✅

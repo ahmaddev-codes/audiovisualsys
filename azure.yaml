@@ -23,7 +23,7 @@ app_settings:
     value: "{{ ELEVENLABS_API_KEY }}"
 
 # Startup Command (Linux - using gunicorn)
-startup_command: "gunicorn --bind 0.0.0.0:$PORT audiovisualsys.wsgi:application"
+startup_command: "gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 audiovisualsys.wsgi:application"
 
 # Build Configuration
 build_config:
@@ -32,14 +32,13 @@ build_config:
     - "pip install -r requirements.txt"
     - "python manage.py migrate --noinput"
     - "python manage.py collectstatic --noinput"
-    - "mkdir -p uploads image_files audio_files media"
+    - "mkdir -p uploads image_files audio_files media staticfiles"
 
 # Deployment Configuration (Linux)
 deployment:
   runtime: "python"
   version: "3.11"
-  startup_file: "startup.sh"
-  startup_command: "gunicorn --bind 0.0.0.0:$PORT audiovisualsys.wsgi:application"
+  startup_command: "gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 audiovisualsys.wsgi:application"
 
 # Environment Variables (to be set in Azure Portal)
 environment_variables:
