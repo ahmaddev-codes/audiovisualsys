@@ -53,4 +53,4 @@ zipp==3.19.0
 
 # Production dependencies
 gunicorn==21.2.0
-whitenoise==6.6.0 
+whitenoise==6.6.0

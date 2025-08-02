@@ -1,4 +1,4 @@
-name: Deploy Django app to Azure Web App (Linux)
+name: Deploy Django app with Docker to Azure
 
 on:
   push:
@@ -8,36 +8,30 @@ on:
 
 env:
   AZURE_WEBAPP_NAME: audiovisualsys
-  PYTHON_VERSION: "3.11"
+  IMAGE_NAME: audiovisualsys
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Create necessary directories
-        run: |
-          mkdir -p uploads image_files audio_files media staticfiles
-
-      - name: Collect static files
-        run: |
-          python manage.py collectstatic --noinput
-
-      - name: Deploy to Azure Web App (Linux)
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
@@ -47,7 +41,7 @@ jobs:
       - name: Wait for deployment
         run: |
           echo "Waiting for deployment to complete..."
-          sleep 30
+          sleep 60
 
       - name: Health check
         run: |
