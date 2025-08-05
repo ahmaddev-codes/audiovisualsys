@@ -15,19 +15,45 @@ This guide explains how to deploy the audiovisualsys Django application using Do
 
 ### Local Development
 
+#### Option 1: Using Docker Compose (Recommended)
+Best for development, handles all configurations automatically:
+
+1. **Build and run:**
+   ```bash
+   # Build and start containers
+   docker-compose up --build
+
+   # Or run in detached mode
+   docker-compose up -d
+   ```
+
+2. **Useful commands:**
+   ```bash
+   # View logs
+   docker-compose logs -f
+
+   # Stop containers
+   docker-compose down
+
+   # Restart containers
+   docker-compose restart
+   ```
+
+#### Option 2: Using Docker Directly
+Useful for simple deployments or testing:
+
 1. **Build the image:**
    ```bash
    docker build -t audiovisualsys .
    ```
 
-2. **Run with docker-compose:**
+2. **Run the container:**
    ```bash
-   docker-compose up
-   ```
-
-3. **Or run directly:**
-   ```bash
-   docker run -p 8000:8000 audiovisualsys
+   docker run -p 8000:8000 \
+     --env-file .env \
+     -v ./uploads:/app/uploads \
+     -v ./media:/app/media \
+     audiovisualsys
    ```
 
 ### Production Deployment
@@ -61,13 +87,7 @@ ELEVENLABS_API_KEY=your-elevenlabs-api-key
 1. **App Service Plan:** Linux (required for containers)
 2. **Deployment Method:** Container
 3. **Environment Variables:** Only the 3 listed above
-4. **Remove these settings (not needed for Docker):**
-   - DEBUG
-   - DJANGO_SETTINGS_MODULE
-   - PYTHON_VERSION
-   - PYTHONPATH
-   - SCM_DO_BUILD_DURING_DEPLOYMENT
-   - WEBSITE_NODE_DEFAULT_VERSION
+
 
 ## 📊 GitHub Actions Deployment
 
@@ -105,17 +125,33 @@ Add these secrets to your GitHub repository:
 
 ### Debug Commands
 
+#### Using Docker Compose (Recommended)
+```bash
+# Check logs
+docker-compose logs -f
+
+# Enter container shell
+docker-compose exec web bash
+
+# Check container status
+docker-compose ps
+
+# Rebuild and restart containers
+docker-compose up --build --force-recreate
+```
+
+#### Using Docker Directly
 ```bash
 # Check container logs
 docker logs audiovisualsys
 
 # Enter container shell
-docker exec -it audiovisualsys /bin/bash
+docker exec -it audiovisualsys bash
 
 # Check container status
 docker ps -a
 
-# Remove all containers
+# Remove all containers and images
 docker system prune -a
 ```
 
@@ -160,4 +196,4 @@ docker system prune -a
 ---
 
 **Last Updated:** August 2nd, 2025
-**Status:** Ready for Docker Deployment ✅ 
+**Status:** Ready for Docker Deployment ✅

@@ -34,83 +34,87 @@ class AIConverter:
         try:
             # Create temporary wav file
             wav_path = webm_path.replace('.webm', '.wav')
-            
+
             # Check if ffmpeg is available
             try:
-                subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True)
+                subprocess.run(['ffmpeg', '-version'],
+                               capture_output=True, check=True)
                 ffmpeg_available = True
             except (subprocess.CalledProcessError, FileNotFoundError):
                 ffmpeg_available = False
                 print("FFmpeg not available, trying alternative approach...")
-            
+
             if ffmpeg_available:
                 # Use ffmpeg to convert webm to wav
                 cmd = [
-                    'ffmpeg', '-i', webm_path, 
-                    '-acodec', 'pcm_s16le', 
-                    '-ar', '16000', 
-                    '-ac', '1', 
+                    'ffmpeg', '-i', webm_path,
+                    '-acodec', 'pcm_s16le',
+                    '-ar', '16000',
+                    '-ac', '1',
                     wav_path, '-y'
                 ]
-                
+
                 print(f"Converting {webm_path} to {wav_path}...")
                 result = subprocess.run(cmd, capture_output=True, text=True)
-                
+
                 if result.returncode == 0 and os.path.exists(wav_path) and os.path.getsize(wav_path) > 0:
                     print(f"Successfully converted to {wav_path}")
                     return wav_path
                 else:
                     print(f"FFmpeg conversion failed: {result.stderr}")
-            
+
             # Fallback: Create a simple wav file from the webm data
             print("Creating simple wav file from webm data...")
             try:
                 # Read the webm file
                 with open(webm_path, 'rb') as f:
                     webm_data = f.read()
-                
+
                 # Create a simple wav file with a placeholder audio
                 import struct
                 import numpy as np
-                
+
                 # Create a simple wav file
                 sample_rate = 16000
                 num_channels = 1
                 bits_per_sample = 16
                 duration = 2.0  # 2 seconds
                 num_samples = int(sample_rate * duration)
-                
+
                 # Generate a simple audio signal (silence with a beep)
                 t = np.linspace(0, duration, num_samples)
                 # Create a simple beep sound
                 audio_signal = 0.1 * np.sin(2 * np.pi * 800 * t)  # 800 Hz tone
                 audio_signal = (audio_signal * 32767).astype(np.int16)
-                
+
                 # Write WAV file
                 with open(wav_path, 'wb') as wav_file:
                     # WAV header
                     wav_file.write(b'RIFF')
-                    wav_file.write(struct.pack('<I', 36 + len(audio_signal) * 2))
+                    wav_file.write(struct.pack(
+                        '<I', 36 + len(audio_signal) * 2))
                     wav_file.write(b'WAVE')
                     wav_file.write(b'fmt ')
                     wav_file.write(struct.pack('<I', 16))
                     wav_file.write(struct.pack('<H', 1))  # PCM
                     wav_file.write(struct.pack('<H', num_channels))
                     wav_file.write(struct.pack('<I', sample_rate))
-                    wav_file.write(struct.pack('<I', sample_rate * num_channels * bits_per_sample // 8))
-                    wav_file.write(struct.pack('<H', num_channels * bits_per_sample // 8))
+                    wav_file.write(struct.pack(
+                        '<I', sample_rate * num_channels * bits_per_sample // 8))
+                    wav_file.write(struct.pack(
+                        '<H', num_channels * bits_per_sample // 8))
                     wav_file.write(struct.pack('<H', bits_per_sample))
                     wav_file.write(b'data')
                     wav_file.write(struct.pack('<I', len(audio_signal) * 2))
                     wav_file.write(audio_signal.tobytes())
-                
+
                 print(f"Created simple wav file: {wav_path}")
                 return wav_path
-                
+
             except Exception as e:
                 print(f"Failed to create wav file: {e}")
                 return webm_path
-                
+
         except Exception as e:
             print(f"Error converting audio: {e}")
             return webm_path
@@ -122,28 +126,29 @@ class AIConverter:
         try:
             # Check if file exists
             if not os.path.exists(audio_file_path):
-                raise FileNotFoundError(f"Audio file not found: {audio_file_path}")
-            
+                raise FileNotFoundError(
+                    f"Audio file not found: {audio_file_path}")
+
             # Check file size
             file_size = os.path.getsize(audio_file_path)
             if file_size == 0:
                 raise ValueError(f"Audio file is empty: {audio_file_path}")
-            
+
             print(f"Audio file path: {audio_file_path}")
             print(f"Audio file size: {file_size} bytes")
-            
+
             # Convert webm to wav if needed
             if audio_file_path.endswith('.webm'):
                 audio_file_path = self._convert_webm_to_wav(audio_file_path)
                 print(f"Using converted audio file: {audio_file_path}")
-            
+
             # Transcribe audio using Whisper
             print("Transcribing audio...")
-            
+
             # Use absolute path and normalize it
             audio_file_path = os.path.abspath(audio_file_path)
             print(f"Using absolute path: {audio_file_path}")
-            
+
             # Try different Whisper options for better compatibility
             whisper_options = [
                 {},  # Default options
@@ -151,20 +156,23 @@ class AIConverter:
                 {'fp16': False, 'language': 'en'},  # Specify language
                 {'fp16': False, 'task': 'transcribe'},  # Explicit task
             ]
-            
+
             for i, options in enumerate(whisper_options):
                 try:
-                    print(f"Trying Whisper transcription with options {i+1}: {options}")
-                    
+                    print(
+                        f"Trying Whisper transcription with options {i+1}: {options}")
+
                     # Simple direct approach - just try the file path
                     print(f"Trying direct file path...")
-                    transcription = self.whisper_model.transcribe(audio_file_path, **options)
+                    transcription = self.whisper_model.transcribe(
+                        audio_file_path, **options)
                     audio_text = transcription['text']
                     print(f"Transcription successful: {audio_text[:100]}...")
                     break
-                        
+
                 except Exception as e:
-                    print(f"Whisper transcription failed with options {i+1}: {e}")
+                    print(
+                        f"Whisper transcription failed with options {i+1}: {e}")
                     if i == len(whisper_options) - 1:  # Last attempt
                         # Nuclear fallback: Use a mock transcription to get the system working
                         print("Using mock transcription as final fallback...")
@@ -182,7 +190,7 @@ class AIConverter:
 
             # Get image description from GPT-4
             response = self.openai_client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4",
                 messages=[
                     {"role": "system", "content": "You are an expert at creating detailed, vivid image descriptions based on audio content. Focus on visual elements, mood, and atmosphere."},
                     {"role": "user", "content": prompt}
