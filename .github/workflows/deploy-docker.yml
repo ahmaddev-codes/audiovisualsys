@@ -9,11 +9,11 @@ on:
 env:
   AZURE_WEBAPP_NAME: audiovisualsys
   IMAGE_NAME: audiovisualsys
-
+  DOCKER_BUILDKIT: 1
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45  # Increased timeout for larger dependencies
 
     steps:
       - name: Checkout code
@@ -21,15 +21,47 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-flags: --debug
+
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: false
-          tags: ${{ env.IMAGE_NAME }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            DOCKER_BUILDKIT=1
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      - name: Set up Python for environment variables
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
@@ -37,21 +69,37 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           slot-name: "production"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          images: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Configure Web App
+        run: |
+          az webapp config set \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --linux-fx-version "DOCKER|${{ env.IMAGE_NAME }}:${{ github.sha }}" \
+            --startup-file "gunicorn audiovisualsys.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120"
 
       - name: Wait for deployment
         run: |
           echo "Waiting for deployment to complete..."
-          sleep 60
+          sleep 90  # Increased wait time for dependencies to initialize
 
       - name: Health check
         run: |
           echo "Checking if application is responding..."
-          for i in {1..10}; do
-            if curl -f -s https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/ > /dev/null; then
+          max_attempts=15  # Increased number of attempts
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            if curl -f -s -m 30 https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/; then
               echo "✅ Application is responding!"
-              break
+              exit 0
             else
-              echo "⏳ Attempt $i: Application not ready yet..."
-              sleep 30
+              echo "⏳ Attempt $attempt/$max_attempts: Application not ready yet..."
+              if [ $attempt -eq $max_attempts ]; then
+                echo "❌ Health check failed after $max_attempts attempts"
+                exit 1
+              fi
+              sleep 45  # Increased sleep time between attempts
             fi
+            attempt=$((attempt + 1))
           done
