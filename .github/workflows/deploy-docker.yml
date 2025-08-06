@@ -13,7 +13,7 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 45  # Increased timeout for larger dependencies
+    timeout-minutes: 45
 
     steps:
       - name: Checkout code
@@ -48,6 +48,7 @@ jobs:
           build-args: |
             BUILDKIT_INLINE_CACHE=1
             DOCKER_BUILDKIT=1
+            PYTHONHTTPSVERIFY=0
 
       - name: Move cache
         run: |
