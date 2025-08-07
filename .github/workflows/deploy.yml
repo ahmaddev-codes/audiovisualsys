@@ -57,6 +57,16 @@ jobs:
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           images: ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.image-info.outputs.tag }}
 
+      - name: Configure Azure Web App with Container
+        run: |
+          az webapp config container set \
+            --name audiovisualsys \
+            --resource-group azure-ug \
+            --container-image-name audiovisualys.azurecr.io/audiovisualsys:latest \
+            --container-registry-url https://audiovisualys.azurecr.io \
+            --container-registry-username ${{ secrets.DOCKER_REGISTRY_SERVER_USERNAME }} \
+            --container-registry-password ${{ secrets.DOCKER_REGISTRY_SERVER_PASSWORD }}
+
       - name: Configure App Settings
         run: |
           az webapp config container set \
