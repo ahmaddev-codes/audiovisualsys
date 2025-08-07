@@ -1,0 +1,332 @@
+name: Build and Deploy to Azure
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+      skip_tests:
+        description: "Skip container tests"
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY_NAME: audiovisualsys
+  IMAGE_NAME: audiovisualsys
+  DOCKER_BUILDKIT: 1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    outputs:
+      image-tag: ${{ steps.image-info.outputs.tag }}
+      image-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to Azure Container Registry
+        run: |
+          az acr login --name ${{ env.REGISTRY_NAME }}
+
+      - name: Generate image tag
+        id: image-info
+        run: |
+          # Use commit SHA for main branch, branch name for others
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            IMAGE_TAG="${{ github.sha }}"
+          else
+            BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9.-]/-/g')
+            IMAGE_TAG="${BRANCH_NAME}-${{ github.sha }}"
+          fi
+          echo "tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "Using image tag: ${IMAGE_TAG}"
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.image-info.outputs.tag }}
+            ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          platforms: linux/amd64
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      - name: Image build summary
+        run: |
+          echo "✅ Image built successfully!"
+          echo "Image: ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.image-info.outputs.tag }}"
+          echo "Digest: ${{ steps.build.outputs.digest }}"
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 15
+    if: ${{ !inputs.skip_tests }}
+
+    steps:
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to Azure Container Registry
+        run: |
+          az acr login --name ${{ env.REGISTRY_NAME }}
+
+      - name: Test container startup
+        run: |
+          IMAGE_TAG="${{ needs.build.outputs.image-tag }}"
+          IMAGE_FULL_NAME="${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
+
+          echo "Testing image: ${IMAGE_FULL_NAME}"
+
+          # Pull the built image
+          docker pull ${IMAGE_FULL_NAME}
+
+          # Test container can start
+          docker run --rm -d \
+            --name test-container \
+            -p 8000:8000 \
+            -e DEBUG=False \
+            -e SECRET_KEY=test-key-for-ci-$(date +%s) \
+            -e ALLOWED_HOSTS=localhost,127.0.0.1 \
+            ${IMAGE_FULL_NAME}
+
+          # Wait for startup
+          echo "Waiting for container to start..."
+          sleep 45
+
+          # Check if container is running
+          if docker ps | grep -q test-container; then
+            echo "✅ Container started successfully"
+
+            # Test HTTP response (optional)
+            for i in {1..5}; do
+              if curl -f -s --max-time 10 http://localhost:8000/ > /dev/null; then
+                echo "✅ Application is responding to HTTP requests"
+                break
+              else
+                echo "⏳ Attempt $i/5: Application not responding yet..."
+                sleep 10
+              fi
+            done
+
+            # Show container logs for debugging
+            echo "=== Container Logs ==="
+            docker logs test-container --tail 50
+
+          else
+            echo "❌ Container failed to start"
+            docker logs test-container 2>/dev/null || echo "No logs available"
+            exit 1
+          fi
+
+          # Cleanup
+          docker stop test-container 2>/dev/null || true
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    timeout-minutes: 30
+    if: ${{ always() && needs.build.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
+
+    environment:
+      name: ${{ inputs.environment || 'production' }}
+      url: ${{ steps.health-check.outputs.webapp-url }}
+
+    steps:
+      - name: Checkout code (for debugging)
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set environment variables
+        id: env-vars
+        run: |
+          ENV="${{ inputs.environment || 'production' }}"
+
+          if [ "$ENV" = "production" ]; then
+            echo "WEBAPP_NAME=audiovisualsys" >> $GITHUB_OUTPUT
+            echo "RESOURCE_GROUP=${{ secrets.AZURE_RESOURCE_GROUP }}" >> $GITHUB_OUTPUT
+            echo "DATABASE_URL_SECRET=DATABASE_URL" >> $GITHUB_OUTPUT
+            echo "STORAGE_ACCOUNT_SECRET=AZURE_STORAGE_ACCOUNT_NAME" >> $GITHUB_OUTPUT
+            echo "STORAGE_KEY_SECRET=AZURE_STORAGE_ACCOUNT_KEY" >> $GITHUB_OUTPUT
+            echo "CONTAINER_SECRET=AZURE_STORAGE_CONTAINER_NAME" >> $GITHUB_OUTPUT
+          elif [ "$ENV" = "staging" ]; then
+            echo "WEBAPP_NAME=audiovisualsys-staging" >> $GITHUB_OUTPUT
+            echo "RESOURCE_GROUP=${{ secrets.AZURE_RESOURCE_GROUP_STAGING || secrets.AZURE_RESOURCE_GROUP }}" >> $GITHUB_OUTPUT
+            echo "DATABASE_URL_SECRET=DATABASE_URL_STAGING" >> $GITHUB_OUTPUT
+            echo "STORAGE_ACCOUNT_SECRET=AZURE_STORAGE_ACCOUNT_NAME_STAGING" >> $GITHUB_OUTPUT
+            echo "STORAGE_KEY_SECRET=AZURE_STORAGE_ACCOUNT_KEY_STAGING" >> $GITHUB_OUTPUT
+            echo "CONTAINER_SECRET=AZURE_STORAGE_CONTAINER_NAME_STAGING" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ steps.env-vars.outputs.WEBAPP_NAME }}
+          slot-name: "production"
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          images: ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image-tag }}
+
+      - name: Configure Web App Settings
+        run: |
+          WEBAPP_NAME="${{ steps.env-vars.outputs.WEBAPP_NAME }}"
+          RESOURCE_GROUP="${{ steps.env-vars.outputs.RESOURCE_GROUP }}"
+          IMAGE_TAG="${{ needs.build.outputs.image-tag }}"
+
+          echo "Configuring Web App: ${WEBAPP_NAME}"
+          echo "Using image: ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
+
+          # Set container configuration
+          az webapp config container set \
+            --resource-group ${RESOURCE_GROUP} \
+            --name ${WEBAPP_NAME} \
+            --docker-custom-image-name ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${IMAGE_TAG} \
+            --docker-registry-server-url https://${{ env.REGISTRY_NAME }}.azurecr.io
+
+          # Configure application settings
+          az webapp config appsettings set \
+            --resource-group ${RESOURCE_GROUP} \
+            --name ${WEBAPP_NAME} \
+            --settings \
+              WEBSITES_PORT=8000 \
+              WEBSITES_ENABLE_APP_SERVICE_STORAGE=false \
+              DJANGO_SETTINGS_MODULE=audiovisualsys.settings \
+              DEBUG=False \
+              ENVIRONMENT="${{ inputs.environment || 'production' }}" \
+              ALLOWED_HOSTS="${WEBAPP_NAME}.azurewebsites.net,localhost,127.0.0.1" \
+              SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}" \
+              DATABASE_URL="${{ secrets[steps.env-vars.outputs.DATABASE_URL_SECRET] }}" \
+              AZURE_STORAGE_ACCOUNT_NAME="${{ secrets[steps.env-vars.outputs.STORAGE_ACCOUNT_SECRET] }}" \
+              AZURE_STORAGE_ACCOUNT_KEY="${{ secrets[steps.env-vars.outputs.STORAGE_KEY_SECRET] }}" \
+              AZURE_STORAGE_CONTAINER_NAME="${{ secrets[steps.env-vars.outputs.CONTAINER_SECRET] }}" \
+              DJANGO_SUPERUSER_USERNAME="${{ secrets.DJANGO_SUPERUSER_USERNAME }}" \
+              DJANGO_SUPERUSER_EMAIL="${{ secrets.DJANGO_SUPERUSER_EMAIL }}" \
+              DJANGO_SUPERUSER_PASSWORD="${{ secrets.DJANGO_SUPERUSER_PASSWORD }}"
+
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for deployment to complete..."
+          sleep 120
+
+      - name: Health check
+        id: health-check
+        run: |
+          WEBAPP_NAME="${{ steps.env-vars.outputs.WEBAPP_NAME }}"
+          APP_URL="https://${WEBAPP_NAME}.azurewebsites.net"
+
+          echo "Health checking application at: ${APP_URL}"
+          max_attempts=20
+          attempt=1
+
+          while [ $attempt -le $max_attempts ]; do
+            echo "⏳ Health check attempt $attempt/$max_attempts..."
+
+            if curl -f -s -m 30 "${APP_URL}/" > /dev/null 2>&1; then
+              echo "✅ Application is responding!"
+              echo "webapp-url=${APP_URL}" >> $GITHUB_OUTPUT
+
+              # Additional endpoint checks
+              echo "Testing additional endpoints..."
+              if curl -s -o /dev/null -w "%{http_code}" "${APP_URL}/admin/" | grep -q "302\|200"; then
+                echo "✅ Admin endpoint accessible"
+              fi
+
+              exit 0
+            else
+              if [ $attempt -eq $max_attempts ]; then
+                echo "❌ Health check failed after $max_attempts attempts"
+
+                # Get diagnostic information
+                echo "=== Deployment Diagnostics ==="
+
+                # Container logs
+                echo "=== Container Logs ==="
+                az webapp log tail \
+                  --name ${WEBAPP_NAME} \
+                  --resource-group ${{ steps.env-vars.outputs.RESOURCE_GROUP }} \
+                  --lines 100 2>/dev/null || echo "Could not retrieve container logs"
+
+                # App service status
+                echo "=== App Service Status ==="
+                az webapp show \
+                  --name ${WEBAPP_NAME} \
+                  --resource-group ${{ steps.env-vars.outputs.RESOURCE_GROUP }} \
+                  --query '{state: state, healthCheckResult: siteConfig.healthCheckPath}' 2>/dev/null || echo "Could not retrieve app status"
+
+                exit 1
+              fi
+              sleep 30
+            fi
+            attempt=$((attempt + 1))
+          done
+
+  summary:
+    runs-on: ubuntu-latest
+    needs: [build, test, deploy]
+    if: always()
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "=== Deployment Summary ==="
+          echo "Build: ${{ needs.build.result }}"
+          echo "Test: ${{ needs.test.result }}"
+          echo "Deploy: ${{ needs.deploy.result }}"
+          echo ""
+
+          if [ "${{ needs.deploy.result }}" = "success" ]; then
+            echo "🎉 Deployment completed successfully!"
+            echo "Environment: ${{ inputs.environment || 'production' }}"
+            echo "Image: ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image-tag }}"
+            echo "App URL: ${{ needs.deploy.outputs.webapp-url }}"
+          else
+            echo "❌ Deployment failed!"
+            echo "Check the logs above for details."
+          fi
+
+          # You can add notifications here
+          # Slack, Teams, Email, etc.
