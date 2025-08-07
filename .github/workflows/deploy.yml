@@ -21,7 +21,7 @@ on:
         type: boolean
 
 env:
-  REGISTRY_NAME: audiovisualsys
+  REGISTRY_NAME: audiovisualys
   IMAGE_NAME: audiovisualsys
   DOCKER_BUILDKIT: 1
 
