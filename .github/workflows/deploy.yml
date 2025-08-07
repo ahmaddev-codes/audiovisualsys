@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY_NAME: audiovisualys
+  REGISTRY_NAME: audiovisualsys
   IMAGE_NAME: audiovisualsys
   DOCKER_BUILDKIT: 1
 
